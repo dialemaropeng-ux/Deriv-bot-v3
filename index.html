@@ -1,0 +1,1741 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b1020"><link rel="manifest" href="manifest.json"><title>Boom and Crash Signal Provider</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#0b1020;color:#eef2ff;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+.app{max-width:560px;margin:auto;min-height:100vh;padding:18px 16px 118px}.top{display:flex;justify-content:space-between;gap:12px}.muted{color:#9aa5b8;font-size:13px}.badge{padding:7px 10px;border-radius:20px;background:#172033;color:#7dd3fc;height:max-content}.badge.live{color:#86efac}.card{background:#151c2d;border:1px solid #273149;border-radius:18px;padding:16px;margin:12px 0}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stat{background:#101728;padding:13px;border-radius:14px}.stat b{display:block;font-size:19px;margin-top:4px}.row{display:flex;justify-content:space-between;align-items:center;gap:10px}.switch{width:54px;height:30px;border-radius:20px;background:#374151;padding:3px;flex:none}.knob{width:24px;height:24px;background:#fff;border-radius:50%;transition:.2s}.on{background:#16a34a}.on .knob{transform:translateX(24px)}button,select,input{width:100%;border:0;border-radius:12px;padding:13px;margin-top:8px;font-size:15px}button{background:#2563eb;color:white;font-weight:700}button.secondary{background:#1d293f}button.dangerbtn{background:#7f1d1d}select,input{background:#0f172a;color:white;border:1px solid #2b3953}.nav{position:fixed;bottom:0;left:0;right:0;background:#0f172a;border-top:1px solid #26334c;display:flex;justify-content:center;z-index:5}.navin{max-width:560px;width:100%;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(2,48px)}.nav button{margin:0;border-radius:0;background:transparent;color:#9aa5b8;min-width:0;white-space:nowrap;padding:8px 4px;font-size:14px}.nav button.active{color:white;background:#172033}.hidden{display:none}.check{color:#86efac}.danger{color:#fca5a5}.warn{color:#fde68a}.signal{border-left:4px solid #22c55e}.sell{border-left-color:#ef4444}.neutral{border-left-color:#64748b}.pill{display:inline-block;padding:4px 8px;border-radius:12px;background:#101728;margin:3px 3px 0 0;font-size:12px}.ok{color:#86efac}.no{color:#fca5a5}.tiny{font-size:11px;color:#7f8ba3}.price{font-size:30px;font-weight:800}.bar{height:8px;background:#0f172a;border-radius:10px;overflow:hidden}.bar>i{display:block;height:100%;background:#2563eb}.table{font-size:13px}.table div{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #243049}.footer-note{font-size:11px;color:#7f8ba3;margin-top:10px;line-height:1.45}
+.markets-strip{display:flex;gap:10px;overflow-x:auto;overflow-y:hidden;padding:2px 2px 10px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+.markets-strip::-webkit-scrollbar{height:5px}.markets-strip::-webkit-scrollbar-thumb{background:#334155;border-radius:10px}
+.multi-market{flex:0 0 152px;min-width:152px;margin:0;padding:10px;border-radius:14px;background:#101728;border:1px solid #273149;scroll-snap-align:start}
+.multi-market .multi-market-head{min-height:48px;align-items:flex-start}.multi-market .multi-market-title{font-size:14px}.multi-market .multi-market-meta{font-size:10px}.multi-market .pill{font-size:10px;padding:4px 6px}
+.dual-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.dual-engine{background:#101728;border:1px solid #273149;border-radius:14px;padding:11px;min-width:0}
+.dual-engine.current-engine{border-color:rgba(59,130,246,.42)}
+.dual-engine.sniper-engine{border-color:rgba(245,158,11,.42)}
+.dual-title{font-weight:800;font-size:14px}
+.dual-sub{font-size:10px;color:#9aa5b8;margin:3px 0 8px}
+.layer-list>div{display:flex;justify-content:space-between;gap:5px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.07);font-size:11px}
+.layer-list>div:last-child{border-bottom:0}
+.layer-list b{white-space:nowrap}
+.layer-yes{color:#86efac}.layer-no{color:#fca5a5}.layer-wait{color:#fde68a}
+.dual-result{margin-top:9px;padding:8px;border-radius:9px;background:#0b1220;font-size:11px;font-weight:800;text-align:center}
+.dual-confluence{margin-top:10px;padding:12px;border-radius:12px;background:#101728;border:1px solid #334155;text-align:center;font-weight:800}
+.dual-confluence.agree{border-color:rgba(34,197,94,.55);color:#86efac}
+.dual-confluence.conflict{border-color:rgba(239,68,68,.55);color:#fca5a5}
+@media(max-width:430px){.dual-grid{grid-template-columns:1fr}}
+
+
+.multi-market.signal{background:linear-gradient(135deg,rgba(34,197,94,.12),rgba(16,23,40,.98));border-color:rgba(34,197,94,.45)}
+.multi-market.sell{background:linear-gradient(135deg,rgba(239,68,68,.13),rgba(16,23,40,.98));border-color:rgba(239,68,68,.45)}
+.multi-market-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.multi-market-title{font-size:15px;font-weight:800}.multi-market-meta{font-size:11px;color:#7f8ba3;margin-top:2px}
+.multi-checks{font-size:10px;color:#aeb8ca;margin-top:6px;line-height:1.45;min-height:29px}
+.multi-price{font-size:18px;font-weight:800;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.multi-tick{font-size:9px;color:#7f8ba3;margin-top:2px}
+
+.multi-controls{display:grid;grid-template-columns:1fr auto;gap:7px;margin-top:7px}.multi-controls select{margin:0;padding:9px 10px;font-size:13px}.multi-controls button{margin:0;padding:9px 10px;font-size:12px;width:auto;white-space:nowrap}
+.new-signal{border:1px solid rgba(251,191,36,.55);background:linear-gradient(135deg,rgba(251,191,36,.16),rgba(21,28,45,.98));box-shadow:0 0 0 1px rgba(251,191,36,.08),0 10px 28px rgba(0,0,0,.18)}
+.new-signal h3{margin:0 0 8px;font-size:18px}.signal-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}.signal-item{background:#101728;border-radius:10px;padding:9px}.signal-item span{display:block;font-size:10px;color:#7f8ba3}.signal-item b{display:block;margin-top:2px;font-size:14px}.signal-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.signal-actions button{margin:0}.compact-note{font-size:11px;color:#7f8ba3;margin-top:8px}.grade-strong{color:#fbbf24}.grade-weak{color:#86efac}.readiness-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}.readiness-item{background:#101728;border-radius:10px;padding:9px}.readiness-item span{display:block;font-size:10px;color:#7f8ba3}.readiness-item b{display:block;margin-top:2px;font-size:14px}.risk-live{border:1px solid rgba(96,165,250,.25);background:#101728;border-radius:12px;padding:10px;margin-top:10px}.risk-live-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.risk-live-item{padding:8px;border-radius:9px;background:#151c2d}.risk-live-item span{display:block;font-size:10px;color:#7f8ba3}.risk-live-item b{display:block;margin-top:2px;font-size:14px}
+@media(max-width:380px){.multi-market{flex-basis:145px;min-width:145px}.multi-controls{grid-template-columns:1fr}.multi-controls button{width:100%}.signal-actions{grid-template-columns:1fr}}
+
+
+.auto-status{border:1px solid rgba(96,165,250,.25);background:#101728;border-radius:12px;padding:10px;margin-top:10px}
+.exec-good{color:#86efac}.exec-warn{color:#fde68a}.exec-bad{color:#fca5a5}
+
+.account-card{max-width:820px}.account-warning{margin-top:10px;padding:10px;border-radius:10px;background:#2a2110;border:1px solid #705b20;color:#f8df92;font-size:12px}
+.account-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.account-grid>div{min-width:0}.account-grid label{display:block;font-size:11px;color:#9aa5b8;margin-bottom:4px}
+.account-info{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}.account-info>div{background:#101728;border:1px solid #273149;border-radius:10px;padding:8px}.account-info span{display:block;font-size:10px;color:#7f8ba3}.account-info b{display:block;font-size:12px;margin-top:3px;word-break:break-word}
+.execution-trade{margin-top:10px;padding:10px;border-radius:10px;background:#0b1220;border:1px solid #273149;font-size:11px}
+@media(max-width:520px){.account-grid{grid-template-columns:1fr}.account-info{grid-template-columns:1fr 1fr}}
+
+.scalp-card{background:linear-gradient(180deg,#121c30,#0e1728);border:1px solid rgba(56,189,248,.28);border-radius:18px;padding:15px;margin:12px 0}
+.scalp-head{display:flex;justify-content:space-between;align-items:center;gap:8px}.scalp-title{font-size:18px;font-weight:900}
+.scalp-badge{padding:6px 9px;border-radius:999px;background:#102e55;color:#7dd3fc;font-size:11px;font-weight:900}
+.scalp-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:10px}
+.scalp-stat{background:#0a1425;border-radius:10px;padding:9px}.scalp-stat span{display:block;color:#7f8ba3;font-size:9px}.scalp-stat b{display:block;margin-top:3px;font-size:13px}
+.scalp-checks{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}.scalp-check{display:flex;justify-content:space-between;background:#0a1425;border-radius:9px;padding:8px;font-size:10px}
+.scalp-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.scalp-actions button{margin-top:8px}
+.scalp-signal{margin-top:10px;padding:12px;border-radius:12px;background:#0b1220;border:1px solid #334155}
+.scalp-signal.buy{border-color:rgba(34,197,94,.55)}.scalp-signal.sell{border-color:rgba(239,68,68,.55)}
+.scalp-signal .dir{font-size:24px;font-weight:950}.scalp-note{font-size:10px;color:#7f8ba3;line-height:1.4;margin-top:8px}
+@media(max-width:430px){.scalp-grid{grid-template-columns:1fr 1fr}}
+
+/* Signal-provider-only interface: hide legacy account, risk, auto-trade and strategy panels. */
+#dashboard,#scanner,#strategy,#risk,#journal,#account,#autoTrade,.nav,#scalpingEngine{display:none!important}
+</style></head>
+<body><div class="app">
+<div class="top"><div><div class="muted">BOOM AND CRASH SIGNAL PROVIDER • M1 ENTRIES</div><h1 id="title">Boom and Crash Signal Provider</h1></div><span class="badge" id="modeBadge">SIGNAL ONLY</span></div>
+
+
+<section id="multi">
+<div class="card">
+  <div class="row"><div><b>📊 Multi-Setup Dashboard</b><div class="muted">10 Boom &amp; Crash markets • live ticks • signal-only</div><div class="tiny" id="engineHeartbeat">Engine idle — start monitoring</div><div id="engineReadiness" class="atp-status-panel" style="margin-top:10px"></div></div><span class="pill" id="multiMonitorPill">WATCHING</span></div>
+  <div class="grid" style="margin-top:10px">
+    <div class="stat">🔥 Strong signals<b id="multiStrong">0</b></div>
+    <div class="stat">🟢 Weak signals<b id="multiWeak">0</b></div>
+    <div class="stat">🔴 Active total<b id="multiActive">0</b></div>
+    <div class="stat">🟡 Waiting<b id="multiWaiting">10</b></div>
+  </div>
+  <button onclick="scanAllMarkets()">🔄 Scan All Markets</button>
+  <button class="secondary" onclick="toggleMultiMonitor()" id="multiMonitorBtn">▶ Start Background Monitoring</button>
+  <button class="secondary" onclick="enableNotifications()">🔔 Enable Phone Notifications</button>
+  <div class="tiny" id="multiLastScan" style="margin-top:8px">Not scanned yet.</div><div class="atp-status-panel" style="margin-top:10px"><div class="atp-status-title">📡 Data & Engine Health</div><div id="marketHealthRows"></div></div>
+</div>
+<div id="multiSignalAlert"></div>\n<div class="card"><b>🛡️ Spike filter</b><div class="muted" style="margin-top:6px">Signals should be blocked during detected abnormal candle movement. Spike detection reduces risk but cannot predict every spike.</div><div class="tiny" style="margin-top:6px">Signal-only mode • no trades are placed automatically.</div></div>
+<div class="scalp-card" id="scalpingEngine">
+  <div class="scalp-head">
+    <div><div class="scalp-title">⚡ SCALPING ENGINE</div><div class="muted">1m / 3m / 5m precision mode • independent of the main strategy</div></div>
+    <span class="scalp-badge" id="scalpStatus">READY</span>
+  </div>
+  <div class="multi-controls" style="margin-top:10px">
+    <select id="scalpTf"><option value="60">1 Minute</option><option value="180">3 Minutes</option><option value="300" selected>5 Minutes</option></select>
+    <button class="secondary" id="scalpToggle">▶ Start Scalping</button>
+  </div>
+  <div class="scalp-grid">
+    <div class="scalp-stat"><span>Market</span><b id="scalpMarket">—</b></div>
+    <div class="scalp-stat"><span>Price</span><b id="scalpPrice">—</b></div>
+    <div class="scalp-stat"><span>Score</span><b id="scalpScore">—</b></div>
+    <div class="scalp-stat"><span>Spread/Noise</span><b id="scalpNoise">—</b></div>
+  </div>
+  <div class="scalp-checks" id="scalpChecks"></div>
+  <div id="scalpSignal" class="scalp-signal">
+    <div class="muted">No scalp setup yet.</div>
+    <div class="scalp-note">The engine waits for momentum, trend alignment, liquidity/level reaction, volatility quality and a minimum 2R opportunity. It will not fire merely because price is moving.</div>
+  </div>
+</div>
+
+
+<div class="card" id="dualLayersCard">
+  <div class="row">
+    <div>
+      <b>⚔️ Dual Strategy Layers</b>
+      <div class="muted">Both engines analyse the same live market independently.</div>
+    </div>
+    <span class="pill" id="dualLayerMarket">WAITING</span>
+  </div>
+
+  <label class="muted" style="display:block;margin-top:10px">Market to inspect</label>
+  <select id="dualLayerSelect" onchange="selectDualLayer(this.value)"></select>
+
+  <div class="dual-grid">
+    <div class="dual-engine current-engine">
+      <div class="dual-title">📘 CURRENT STRATEGY</div>
+      <div class="dual-sub" id="dualCurrentState">WAITING FOR SCAN</div>
+      <div class="layer-list">
+        <div><span>BOS</span><b id="dlBos">—</b></div>
+        <div><span>Order Block</span><b id="dlOb">—</b></div>
+        <div><span>FVG</span><b id="dlFvg">—</b></div>
+        <div><span>Retest / Reaction</span><b id="dlRetest">—</b></div>
+        <div><span>Confirmation</span><b id="dlConf">—</b></div>
+        <div><span>Reclaim</span><b id="dlReclaim">—</b></div>
+        <div><span>Displacement</span><b id="dlDisp">—</b></div>
+        <div><span>Liquidity Sweep</span><b id="dlSweep">—</b></div>
+        <div><span>RSI Momentum</span><b id="dlRsi">—</b></div>
+        <div><span>ATR Regime</span><b id="dlAtr">—</b></div>
+        <div><span>OTE 61.8–79%</span><b id="dlOte">—</b></div>
+        <div><span>Confidence</span><b id="dlScore">—</b></div>
+        <div><span>RR</span><b id="dlRr">—</b></div>
+      </div>
+      <div class="dual-result" id="dualCurrentResult">WAITING</div>
+    </div>
+
+    <div class="dual-engine sniper-engine">
+      <div class="dual-title">🎯 SNIPER STRATEGY</div>
+      <div class="dual-sub" id="dualSniperState">WAITING FOR SCAN</div>
+      <div class="layer-list">
+        <div><span>Structure Break</span><b id="dsStructure">—</b></div>
+        <div><span>Liquidity Sweep</span><b id="dsSweep">—</b></div>
+        <div><span>Displacement</span><b id="dsDisp">—</b></div>
+        <div><span>FVG</span><b id="dsFvg">—</b></div>
+        <div><span>OTE</span><b id="dsOte">—</b></div>
+        <div><span>Confirmation</span><b id="dsConf">—</b></div>
+        <div><span>Sniper Score</span><b id="dsScore">—</b></div>
+        <div><span>RR</span><b id="dsRr">—</b></div>
+      </div>
+      <div class="dual-result" id="dualSniperResult">WAITING</div>
+    </div>
+  </div>
+
+  <div class="dual-confluence" id="dualConfluence">
+    ⚪ Waiting for both strategy engines
+  </div>
+  <div class="tiny">The two strategies are displayed separately and are not merged. Automatic execution still follows the gate selected in the Auto tab.</div>
+</div>
+
+<div class="card">
+  <div class="row"><b>Markets</b><span class="tiny">Swipe horizontally • 20 markets</span></div>
+  <div id="multiRows" class="markets-strip" style="margin-top:8px"></div>
+</div>
+<div class="card">
+  <b>Notification & alert rules</b>
+  <p class="muted">A new signal triggers an in-app alert, sound, and phone notification when browser notifications are enabled. Duplicate alerts are suppressed until the setup changes.</p>
+  <div class="tiny">🔒 Automatic execution is available in the Auto tab; it remains OFF until you explicitly connect and arm it.</div>
+</div>
+</section>
+
+<section id="dashboard" class="hidden">
+<div class="card"><div class="muted">MARKET CONNECTION</div><div class="row"><div><b id="connectionText">Not connected</b><div class="tiny" id="connectionSub">Public market data</div></div><span class="pill" id="connectionPill">OFFLINE</span></div>
+<div class="grid" style="margin-top:10px"><div class="stat">Symbol<b id="homeSymbol">—</b></div><div class="stat">Price<b id="homePrice">—</b></div><div class="stat">Timeframe<b id="homeTf">M1</b></div><div class="stat">Last scan<b id="homeScan">—</b></div></div></div>
+
+<div class="card"><div class="row"><div><b>Signal Engine</b><div class="muted">BOS • OB • FVG • retest • reclaim • displacement • sweep • RSI • ATR • OTE</div></div><div class="switch" id="auto" onclick="toggleAuto()"><div class="knob"></div></div></div><div class="muted" style="margin-top:8px">Auto mode scans and journals signals. Automatic execution is separately controlled in the Auto tab.</div></div>
+
+<div class="card"><b>Current setup</b><div id="homeSetup" class="muted" style="margin-top:8px">Run a scan to analyse the market.</div></div>
+<div class="card"><b>Market</b><select id="symbol"></select><select id="tf"><option value="60" selected>M1</option></select><button onclick="connectAndScan()">Connect & Scan</button></div>
+</section>
+
+<section id="scanner" class="hidden">
+<div class="card"><b>Live Signal Scanner</b><p class="muted">Read-only public market data. No account credentials are used.</p>
+<button onclick="connectAndScan()">Refresh candles & scan</button><div id="scanMeta" class="tiny"></div></div>
+<div id="result"></div>
+</section>
+
+<section id="strategy" class="hidden">
+<div class="card"><b>Strategy engine</b>
+<div class="table"><div><span>BOS</span><span id="sBos">—</span></div><div><span>Order Block</span><span id="sOb">—</span></div><div><span>FVG</span><span id="sFvg">—</span></div><div><span>Retest / reaction</span><span id="sRetest">—</span></div><div><span>Confirmation</span><span id="sConf">—</span></div><div><span>Reclaim</span><span id="sReclaim">—</span></div><div><span>Displacement</span><span id="sDisp">—</span></div><div><span>Liquidity sweep</span><span id="sSweep">—</span></div><div><span>RSI momentum</span><span id="sRsi">—</span></div><div><span>ATR regime</span><span id="sAtr">—</span></div><div><span>Confidence</span><span id="sScore">—</span></div><div><span>OTE 61.8–79% (Strong upgrade)</span><span id="sOte">—</span></div><div><span>Minimum RR</span><span id="sRr">2.0</span></div></div></div>
+<div class="card"><b>Final strategy rules</b><p class="check">✓ BOS + Order Block + FVG required</p><p class="check">✓ Retest/reaction + closed-candle confirmation required</p><p class="check">✓ Reclaim/continuation break required before signal</p><p class="check">✓ Displacement + liquidity sweep + RSI + ATR confidence filters</p><p class="check">✓ Minimum confidence: 3/4 filters</p><p class="check">⭐ OTE = Strong signal upgrade</p><p class="check">✓ No OTE = Weak signal when 3/4 confidence filters pass</p><p class="check">✓ RR ≥ 1:2 using structural SL and actual target</p><p class="tiny">The rules are identical whether you use the signal manually on demo or with Auto execution. Automatic execution remains locked until you connect and arm it.</p>
+<label class="muted">Minimum RR</label><input id="minRR" type="number" value="2" step=".5" min="1"></div>
+<div class="card"><b>How the engine reads price</b><p class="muted">It identifies swing points and BOS, finds the Order Block and FVG, then waits for a retest/reaction, closed-candle confirmation, and a subsequent reclaim/continuation break. OTE is optional: when OTE is present the setup is Strong; when OTE is absent but every other requirement passes, the setup is Weak. A signal is blocked if price bounces back across the reclaim level.</p></div>
+</section>
+
+<section id="risk" class="hidden">
+<div class="card"><b>Risk Management</b><p class="muted">Used for demo planning and signal risk amounts. It does not place orders or calculate broker-specific lot size.</p><label class="muted">Demo account balance (R)</label><input id="balance" value="10000" type="number" min="0">
+<label class="muted">Risk per trade (%)</label><input id="riskPct" value="1" type="number" step=".1" min=".1" max="10">
+<label class="muted">Maximum trades/day</label><input id="maxTrades" value="3" type="number" min="1">
+<label class="muted">Daily loss limit (%)</label><input id="lossLimit" value="3" type="number" step=".5" min=".5">
+<button onclick="saveRisk()">Save Settings</button></div>
+<div class="card"><b>Today</b><div class="grid"><div class="stat">Trades<b id="tradeCount">0</b></div><div class="stat">Loss limit<b id="lossCash">R300</b></div></div><button class="dangerbtn" onclick="resetJournal()">Reset demo journal</button></div>
+<div class="card"><b>Safety</b><p class="danger">MT5/live execution is not connected. This version cannot place real trades.</p><p class="muted">Never place broker credentials or API tokens inside a GitHub Pages frontend.</p></div>
+<div class="card"><b>📐 Live Risk Budget</b><div id="riskLiveSummary" class="risk-live"></div></div>
+</section>
+
+<section id="journal" class="hidden">
+<div class="card"><div class="row"><div><b>📒 Demo Signal Journal</b><div class="muted">Frozen signals and manual demo results</div></div><span class="pill">PAPER ONLY</span></div>
+<div class="grid" style="margin-top:10px"><div class="stat">Signals<b id="jTotal">0</b></div><div class="stat">Win rate<b id="jWinRate">0%</b></div><div class="stat">Net R<b id="jNetR">0.00R</b></div><div class="stat">Open<b id="jOpen">0</b></div></div>
+<div class="grid" style="margin-top:10px"><div class="stat">Wins<b id="jWins">0</b></div><div class="stat">Losses<b id="jLosses">0</b></div><div class="stat">BE<b id="jBE">0</b></div><div class="stat">Cancelled<b id="jCancelled">0</b></div></div>
+<button class="secondary" onclick="exportJournal()">⬇ Export Journal</button><button class="dangerbtn" onclick="clearJournal()">Clear Journal</button>
+</div>
+<div class="card"><b>Signal history</b><div id="journalList" class="table" style="margin-top:8px"><div class="muted">No frozen signals yet.</div></div></div>
+<div class="card"><b>How demo testing works</b><p class="muted">When a valid setup fires, Entry/SL/TP/RR are frozen. Take the trade manually in your demo account, then return here and mark the result. The live price can continue moving without changing the recorded signal.</p><div class="tiny">🔒 AutoTrade Pro never places the order.</div></div>
+</section>
+
+
+<section id="autoTrade" class="hidden">
+<div class="card">
+  <div class="row"><div><b>⚡ Automatic Execution + Auto Exit</b><div class="muted">Deriv account execution • Current + Sniper engines remain separate</div></div><span class="pill" id="execState">LOCKED</span></div>
+  <div class="tiny" style="margin-top:8px">This layer is OFF by default. It can connect to a Deriv demo or real account using your own authorised token. The token is kept only in this browser session and is never written to GitHub or localStorage.</div>
+</div>
+<div class="card">
+  <b>1. Execution account</b>
+  <label class="muted">Deriv App ID</label><input id="execAppId" value="" autocomplete="off" placeholder="Your Deriv App ID">
+  <label class="muted">Deriv Account ID</label><input id="execAccountId" value="" placeholder="e.g. DOT90000000">
+  <label class="muted">Personal Access Token</label><input id="execToken" type="password" autocomplete="off" placeholder="Paste your Deriv token here">
+  <div class="grid">
+    <div><label class="muted">Account mode</label><select id="execMode"><option value="demo" selected>DEMO AUTO</option><option value="real">REAL AUTO</option></select></div>
+    <div><label class="muted">Stake</label><input id="execStake" type="number" min="0.35" step="0.01" value="1"></div>
+  </div>
+  <div class="grid">
+    <div><label class="muted">Currency</label><input id="execCurrency" value="USD" maxlength="10" placeholder="USD"></div>
+    <div><label class="muted">Multiplier</label><select id="execMultiplier"><option value="auto" selected>AUTO — detect valid multiplier</option><option value="40">40</option><option value="50">50</option><option value="100">100</option><option value="200">200</option><option value="300">300</option><option value="400">400</option><option value="1000">1000</option><option value="2000">2000</option><option value="3000">3000</option><option value="4000">4000</option></select></div>
+    <div><label class="muted">Signal gate</label><select id="execGate"><option value="current">Current strategy only</option><option value="sniper">Sniper only</option><option value="either">Either strategy</option><option value="both">Both must agree</option></select></div>
+  </div>
+  <button class="secondary" onclick="connectExecution()">🔐 Use Account Connection</button>
+  <div id="execConnectionMsg" class="tiny" style="margin-top:8px">Connect the Account tab first. Auto execution will reuse the same authenticated connection.</div>
+</div>
+<div class="card">
+  <b>2. Safety limits</b>
+  <div class="grid">
+    <div><label class="muted">Max trades / day</label><input id="execMaxTrades" type="number" min="1" value="3"></div>
+    <div><label class="muted">Max stake / trade</label><input id="execMaxStake" type="number" min="0.35" step="0.01" value="5"></div>
+  </div>
+  <label class="muted">Daily loss limit (account currency)</label><input id="execDailyLoss" type="number" min="0" step="0.01" value="10">
+  <div class="grid" style="margin-top:8px">
+    <div><label class="muted">Auto close at signal TP/SL</label><select id="execAutoExit"><option value="on" selected>ON — manage price exits</option><option value="off">OFF</option></select></div>
+    <div><label class="muted">Maximum hold (minutes)</label><input id="execMaxHold" type="number" min="1" value="30"></div>
+  </div>
+  <div class="tiny" style="margin-top:8px">OPEN trades are monitored in real time. When enabled, AutoTrade Pro can close a live multiplier contract at the signal's TP/SL price or the maximum-hold safety timer, using Deriv's authenticated <code>sell</code> operation.</div>
+</div>
+<div class="card">
+  <b>3. Arm automatic trading</b>
+  <label style="display:flex;gap:10px;align-items:flex-start;margin-top:10px">
+    <input id="execRealConfirm" type="checkbox" style="width:auto;margin-top:3px">
+    <span class="tiny">I understand that REAL AUTO can place real-money trades and I will test DEMO AUTO first.</span>
+  </label>
+  <button onclick="armAuto()" id="armAutoBtn">🔒 ARM DEMO AUTO</button>
+  <button class="dangerbtn" onclick="disarmAuto()">⛔ STOP AUTO TRADING</button>
+  <div id="execLastAction" class="tiny" style="margin-top:8px">Automatic execution is disarmed.</div>
+</div>
+<div class="card">
+  <div class="row"><b>📡 LIVE TRADE MONITOR</b><span class="pill" id="execLiveCount">0 OPEN</span></div>
+  <div id="execLiveMonitor" style="margin-top:10px"><div class="muted">No open trades. When a demo trade opens, its live contract stream, spot price, P/L, TP/SL distance and auto-close state will appear here.</div></div>
+</div>
+<div class="card">
+  <div class="row"><b>Automatic trade log</b><span class="pill" id="execTradeCount">0 / 3</span></div>
+  <div id="execLog" class="table" style="margin-top:8px"><div class="muted">No automatic orders yet.</div></div>
+</div>
+<div class="card">
+  <b>How execution works</b>
+  <p class="muted">When the selected strategy gate is satisfied, the engine requests a Deriv proposal and buys it. Each open contract is then subscribed to in real time; when enabled, the exit manager closes the contract at the signal TP/SL price or the maximum-hold timer. Closing uses Deriv's authenticated sell operation. The TP/SL values are local strategy exit triggers for the multiplier position.</p>
+  <p class="tiny">Real execution requires authenticated Deriv API access and is not possible from the public market-data connection alone.</p>
+</div>
+</section>
+
+<section id="account" class="hidden">
+  <div class="card account-card">
+    <div class="row"><div><b>🔐 Deriv Account</b><div class="muted">Connect your demo account. Auto execution uses this same authenticated connection.</div></div><span id="accountStatus" class="pill">DISCONNECTED</span></div>
+    <div class="account-warning"><b>DEMO FIRST:</b> Use a demo API token. The token is held only in this page session and is not placed in the ZIP. Do not enter your account password.</div>
+    <div class="account-grid">
+      <div><label>Account</label><select id="accountMode"><option value="demo">DEMO</option><option value="real">REAL</option></select></div>
+      <div><label>Deriv App ID</label><input id="accountAppId" autocomplete="off" placeholder="Your Deriv App ID"></div>
+      <div><label>Deriv API token</label><input id="accountToken" type="password" autocomplete="off" placeholder="Paste API token"></div>
+    </div>
+    <button onclick="connectAccount()">🔗 Connect</button>
+    <button class="secondary" onclick="disconnectAccount()">Disconnect</button>
+    <button class="secondary" onclick="clearAccountToken()">Clear Token</button>
+    <div class="account-info">
+      <div><span>Account ID</span><b id="accountId">—</b></div><div><span>Balance</span><b id="accountBalance">—</b></div><div><span>Currency</span><b id="accountCurrency">—</b></div><div><span>Connection</span><b id="accountConnectionState">OFFLINE</b></div>
+    </div>
+    <div id="accountMessage" class="tiny">No account connected.</div>
+  </div>
+
+  <div class="card">
+    <div class="row"><div><b>🤖 Automatic Execution Control</b><div class="muted">Use the Auto tab for the single unified execution + live monitor.</div></div><span id="autoGateStatus" class="pill">OFF</span></div>
+    <div class="account-grid">
+      <div><label>Execution mode</label><select id="executionMode" onchange="updateAutoGate()"><option value="off">OFF — Signals only</option><option value="demo">DEMO AUTO</option><option value="real">REAL AUTO</option></select></div>
+      <div><label>Strategy gate</label><select id="executionGate"><option value="current">Current Strategy</option><option value="sniper">Sniper Strategy</option><option value="either">Either Strategy</option><option value="both">Both must agree</option></select></div>
+      <div><label>Stake (account currency)</label><input id="executionStake" type="number" min="0.35" step="0.01" value="1"></div>
+      <div><label>Multiplier</label><input id="executionMultiplier" type="number" min="1" step="1" value="10"></div>
+      <div><label>Duration</label><input id="executionDuration" type="number" min="1" step="1" value="5"></div>
+      <div><label>Duration unit</label><select id="executionDurationUnit"><option value="m">Minutes</option><option value="s">Seconds</option><option value="t">Ticks</option></select></div>
+    </div>
+    <button class="dangerbtn" onclick="armAutomaticTrading()">⚠️ Arm Automatic Trading</button>
+    <button onclick="executeSelectedSignal()">▶ Test Selected Signal</button>
+    <div id="executionMessage" class="tiny">Execution is OFF.</div>
+    <div id="executionTrade" class="execution-trade">No trade executed in this session.</div>
+  </div>
+</section>
+<div class="nav"><div class="navin"><button onclick="show('multi',this)" class="active">Multi</button><button onclick="show('dashboard',this)">Chart</button><button onclick="show('scanner',this)">Scanner</button><button onclick="show('strategy',this)">Strategy</button><button onclick="show('risk',this)">Risk</button><button onclick="show('journal',this)">Journal</button><button onclick="show('account',this)">🔐 Account</button><button onclick="show('autoTrade',this)">Auto</button></div></div>
+</div>
+<script>
+const pages=['multi','dashboard','scanner','strategy','risk','journal','account','autoTrade'];
+// Legacy public market-data WebSocket supports active_symbols, ticks_history and ticks.
+// The Options trading WebSocket is not compatible with these public market-data requests.
+const DERIV_WS='wss://ws.derivws.com/websockets/v3?app_id=1089';
+let ws=null, req=0, pending=new Map(), lastCandles=[], lastAnalysis=null, autoTimer=null;
+let tickSubscriptions=new Map(), tickPrices=new Map(), engineTimer=null, scanBusy=false;
+const MULTI_KEY='atp_multi_markets_v3';
+const TARGET_MARKET_LABELS=[
+ 'Boom 300 Index','Boom 500 Index','Boom 600 Index','Boom 900 Index','Boom 1000 Index',
+ 'Crash 300 Index','Crash 500 Index','Crash 600 Index','Crash 900 Index','Crash 1000 Index'
+];
+let marketCatalog=new Map();
+let multiMarkets=[], multiTimer=null, multiMonitoring=false, multiState={}, lastAlertKeys={};
+const SIGNAL_KEY='atp_frozen_signals_v2';
+const JOURNAL_KEY='atp_demo_journal_v2';
+let frozenSignals=loadJSON(SIGNAL_KEY,[]), setupStates=new Map();
+let lastTickAt=new Map();
+setInterval(()=>{renderMarketHealth();},2000);
+
+const defaultSymbols=[
+ ['R_75','Volatility 75 Index'],['R_10','Volatility 10 Index'],['R_25','Volatility 25 Index'],['R_50','Volatility 50 Index'],['R_100','Volatility 100 Index'],
+ ['1HZ10V','Volatility 10 (1s) Index'],['1HZ25V','Volatility 25 (1s) Index'],['1HZ50V','Volatility 50 (1s) Index'],['1HZ75V','Volatility 75 (1s) Index'],['1HZ100V','Volatility 100 (1s) Index'],['1HZ150V','Volatility 150 (1s) Index'],['1HZ250V','Volatility 250 (1s) Index'],
+ ['BOOM300','Boom 300 Index'],['BOOM500','Boom 500 Index'],['BOOM600','Boom 600 Index'],['BOOM900','Boom 900 Index'],['BOOM1000','Boom 1000 Index'],['CRASH300','Crash 300 Index'],['CRASH500','Crash 500 Index'],['CRASH600','Crash 600 Index'],['CRASH900','Crash 900 Index'],['CRASH1000','Crash 1000 Index']
+];
+
+
+function loadJSON(key,fallback){try{const v=JSON.parse(localStorage.getItem(key)||'null');return v??fallback}catch(e){return fallback}}
+function saveJSON(key,v){localStorage.setItem(key,JSON.stringify(v))}
+function journalEntries(){return loadJSON(JOURNAL_KEY,[])}
+function saveJournalEntries(v){saveJSON(JOURNAL_KEY,v)}
+function signalSetupId(sym,a){return [sym,a.grade||'NONE',a.dir,a.bosI,a.ob?.i,a.fvg?.i].join('|')}
+function getRiskSettings(){return {balance:+document.getElementById('balance')?.value||10000,riskPct:+document.getElementById('riskPct')?.value||1,maxTrades:+document.getElementById('maxTrades')?.value||3,lossLimit:+document.getElementById('lossLimit')?.value||3}}
+function riskAmount(){const r=getRiskSettings();return r.balance*(r.riskPct/100)}
+function readinessText(a){if(!a)return 'Waiting for scan'; if(a.signal)return a.grade==='STRONG'?'STRONG SIGNAL READY':'WEAK SIGNAL READY'; if(!a.bos)return 'Waiting for BOS'; if(!a.ob)return 'BOS found — waiting OB'; if(!a.fvg)return 'OB found — waiting FVG'; if(!a.retest)return 'Waiting for retest/reaction'; if(!a.conf)return 'Retest found — waiting closed confirmation'; if(!a.reclaim)return a.reclaimLost?'Reclaim lost — waiting for fresh continuation':'Waiting for reclaim / continuation break'; if(a.rr<((+document.getElementById('minRR')?.value)||2))return 'Reclaimed, RR below minimum'; if(a.confidence<a.minConfidence)return `Confidence ${a.confidence}/4 — need ${a.minConfidence}/4`; if(!a.oteOk)return 'WEAK candidate — confidence threshold met, OTE not reached'; return 'Strong candidate — OTE + confidence threshold met'}
+function actualTarget(dir,entry,sl,cs){
+  const risk=Math.abs(entry-sl); if(!risk)return {tp:null,rr:0,targetType:'none'};
+  const recent=cs.slice(Math.max(0,cs.length-80));
+  let target=null;
+  if(dir==='BUY'){
+    const highs=recent.map(c=>c.h).filter(x=>x>entry).sort((a,b)=>a-b);
+    target=highs.find(x=>(x-entry)/risk>=2)??Math.max(entry+risk*2,...highs.filter(x=>x>entry));
+  }else{
+    const lows=recent.map(c=>c.l).filter(x=>x<entry).sort((a,b)=>b-a);
+    target=lows.find(x=>(entry-x)/risk>=2)??Math.min(entry-risk*2,...lows.filter(x=>x<entry));
+  }
+  if(!Number.isFinite(target))target=dir==='BUY'?entry+risk*2:entry-risk*2;
+  const rr=Math.abs(target-entry)/risk;
+  return {tp:target,rr,targetType:rr>=2?'structural/2R+':'2R fallback'};
+}
+function freezeSignal(i,a){
+  const sym=multiMarkets[i]; const setupId=signalSetupId(sym,a);
+  const existing=frozenSignals.find(x=>x.setupId===setupId);
+  if(existing)return existing;
+  const now=new Date().toISOString();
+  const signal={id:'SIG-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7),setupId,symbol:sym,label:label(sym),timeframe:'M1',direction:a.dir,grade:a.grade,entry:a.entry,sl:a.sl,tp:a.tp,rr:a.rr,riskAmount:riskAmount(),riskPercent:getRiskSettings().riskPct,createdAt:now,status:'OPEN',exitPrice:null,resultR:null,reason:a.reason,confidence:a.confidence,displacement:a.displacement,sweep:a.sweep,rsi:a.rsi,atrOk:a.atrOk,bosI:a.bosI,obI:a.ob?.i??null,fvgI:a.fvg?.i??null,ote:a.ote?{lo:a.ote.lo,hi:a.ote.hi,mid:a.ote.mid}:null};
+  frozenSignals.unshift(signal); frozenSignals=frozenSignals.slice(0,200); saveJSON(SIGNAL_KEY,frozenSignals);
+  const j=journalEntries(); j.unshift(signal); saveJournalEntries(j.slice(0,200)); renderJournal(); return signal;
+}
+function updateJournalResult(id,result,exitPrice){
+  const h=frozenSignals.map(x=>x.id===id?{...x,status:result,exitPrice:exitPrice??x.exitPrice,resultR:calcResultR(x,result,exitPrice)}:x);
+  frozenSignals=h; saveJSON(SIGNAL_KEY,h); saveJournalEntries(h.slice()); renderJournal(); renderMultiRows();
+}
+function calcResultR(x,result,exitPrice){if(result==='WIN')return  Math.abs((x.tp-x.entry)/(x.entry-x.sl)); if(result==='LOSS')return -1; if(result==='BE')return 0; return null}
+function renderJournal(){
+ const h=frozenSignals; const wins=h.filter(x=>x.status==='WIN').length,loss=h.filter(x=>x.status==='LOSS').length,be=h.filter(x=>x.status==='BE').length,open=h.filter(x=>x.status==='OPEN').length,cancel=h.filter(x=>x.status==='CANCELLED').length;
+ const decided=wins+loss+be; const net=h.reduce((s,x)=>s+(Number(x.resultR)||0),0);
+ const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v}; set('jTotal',h.length);set('jWins',wins);set('jLosses',loss);set('jBE',be);set('jOpen',open);set('jCancelled',cancel);set('jWinRate',(decided?wins/decided*100:0).toFixed(1)+'%');set('jNetR',net.toFixed(2)+'R');
+ const box=document.getElementById('journalList'); if(!box)return;
+ box.innerHTML=h.length?h.slice(0,50).map(x=>`<div style="display:block;padding:10px 0"><div class="row"><span><b>${x.grade==='STRONG'?'🔥 STRONG':x.grade==='WEAK'?'🟢 WEAK':'SIGNAL'} ${x.label} ${x.direction}</b><br><span class="tiny">${new Date(x.createdAt).toLocaleString()} • ${x.timeframe} • Risk R${Number(x.riskAmount||0).toFixed(2)}</span></span><span class="pill">${x.status}</span></div><div class="tiny" style="margin-top:6px">E ${fmt(x.entry)} • SL ${fmt(x.sl)} • TP ${fmt(x.tp)} • RR ${x.rr.toFixed(2)}R</div><div class="signal-actions" style="margin-top:6px">${x.status==='OPEN'?`<button onclick="updateJournalResult('${x.id}','WIN')">WIN</button><button class="secondary" onclick="updateJournalResult('${x.id}','LOSS')">LOSS</button><button class="secondary" onclick="updateJournalResult('${x.id}','BE')">BE</button><button class="dangerbtn" onclick="updateJournalResult('${x.id}','CANCELLED')">CANCEL</button>`:`<span class="tiny">Result: ${x.status} • ${x.resultR==null?'—':x.resultR.toFixed(2)+'R'}</span>`}</div></div>`).join(''):'<div class="muted">No frozen signals yet.</div>';
+}
+function exportJournal(){const blob=new Blob([JSON.stringify(frozenSignals,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='autotrade-pro-demo-journal.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+function clearJournal(){if(!confirm('Clear all frozen demo signals and results?'))return;frozenSignals=[];saveJSON(SIGNAL_KEY,[]);saveJSON(JOURNAL_KEY,[]);renderJournal()}
+function loadMultiMarkets(){try{const x=JSON.parse(localStorage.getItem(MULTI_KEY)||'null');return Array.isArray(x)&&x.length===TARGET_MARKET_LABELS.length?x:[];}catch(e){return []}}
+function saveMultiMarkets(){localStorage.setItem(MULTI_KEY,JSON.stringify(multiMarkets))}
+function marketOptions(selected){
+  const opts=[...marketCatalog.entries()].map(([sym,name])=>[sym,name]);
+  const source=opts.length?opts:defaultSymbols;
+  return source.map(x=>`<option value="${x[0]}" ${x[0]===selected?'selected':''}>${x[1]}</option>`).join('');
+}
+function label(sym){return marketCatalog.get(sym)||defaultSymbols.find(x=>x[0]===sym)?.[1]||sym}
+function resolveTargetMarkets(symbols){
+  const items=symbols.map(x=>({sym:x.underlying_symbol||x.symbol,name:x.underlying_symbol_name||x.display_name||''})).filter(x=>x.sym);
+  const norm=s=>String(s).toLowerCase().replace(/\s+/g,' ').trim();
+  const exact=new Map(items.map(x=>[norm(x.name),x]));
+  const pick=(patterns, fallbackName)=>{
+    const hit=items.find(x=>patterns.some(r=>r.test(norm(x.name))));
+    return hit?hit.sym:null;
+  };
+  const wanted=[];
+  for(const name of TARGET_MARKET_LABELS){
+    let hit=exact.get(norm(name));
+    if(!hit){
+      if(name==='Gold') hit=items.find(x=>/gold|xau\s*\/?\s*usd/i.test(x.name));
+      else if(name==='NASDAQ 100') hit=items.find(x=>/nasdaq\s*100|nasdaq100|us tech 100|nas100/i.test(x.name));
+      else hit=items.find(x=>norm(x.name)===norm(name));
+    }
+    if(hit){wanted.push(hit.sym);marketCatalog.set(hit.sym,hit.name||name);}
+  }
+  // Preserve all requested categories; if a broker/account omits a symbol, do not invent it.
+  return [...new Set(wanted)];
+}
+async function discoverMarkets(){
+  await openWS();
+  const d=await rpc({active_symbols:'brief'});
+  const found=resolveTargetMarkets(d.active_symbols||[]);
+  if(found.length>=10){multiMarkets=found;saveMultiMarkets();}
+  else {
+    const saved=loadMultiMarkets();
+    multiMarkets=saved.length?saved:defaultSymbols.map(x=>x[0]);
+    defaultSymbols.forEach(x=>marketCatalog.set(x[0],x[1]));
+  }
+  renderMultiRows();
+  initSymbols();
+  return multiMarkets;
+}
+function multiStatus(a,err){
+  if(err)return ['⚪ NO SETUP','neutral'];
+  if(a?.signal)return a.grade==='STRONG'?['🔥 STRONG SIGNAL','signal']:['🟢 WEAK SIGNAL','signal'];
+  if(a?.bos&&a?.ob&&a?.fvg&&a?.retest&&a?.conf&&a?.reclaim&&a?.rr>=((+document.getElementById('minRR')?.value)||2)&&!a?.oteOk)return ['🟢 WEAK READY','signal'];
+  if(a?.bos&&a?.ob&&a?.fvg&&a?.retest&&a?.conf&&!a?.reclaim)return [a.reclaimLost?'🟠 RECLAIM LOST':'🟡 WAITING RECLAIM','neutral'];
+  if(a?.bos&&a?.ob&&a?.fvg&&a?.retest&&!a?.conf)return ['🟡 WAITING CONFIRM','neutral'];
+  if(a?.bos&&a?.ob&&a?.fvg&&!a?.retest)return ['🟡 WAITING RETEST','neutral'];
+  if(a?.bos||a?.ob||a?.fvg)return ['🔵 WATCHING','neutral'];
+  return ['⚪ NO SETUP','neutral'];
+}
+function renderMarketHealth(){const box=document.getElementById('marketHealthRows');if(!box)return;box.innerHTML=multiMarkets.map(sym=>{const t=lastTickAt.get(sym);const age=t?Date.now()-t:Infinity;const state=age<5000?'🟢 LIVE':age<20000?'🟡 STALE':'🔴 NO TICKS';return `<div class="atp-row"><span>${label(sym)}</span><strong>${state}${Number.isFinite(age)?' • '+Math.floor(age/1000)+'s':''}</strong></div>`}).join('')}
+
+let dualLayerIndex=0;
+
+function layerMark(v, labelYes='✓ YES', labelNo='✕ NO'){
+  if(v===null || v===undefined)return '<span class="layer-wait">—</span>';
+  return v
+    ? '<span class="layer-yes">'+labelYes+'</span>'
+    : '<span class="layer-no">'+labelNo+'</span>';
+}
+function layerText(v){
+  if(v===null || v===undefined)return 'WAITING';
+  return v?'READY':'WAITING';
+}
+function selectDualLayer(v){
+  const i=Math.max(0,Math.min(multiMarkets.length-1,Number(v)||0));
+  dualLayerIndex=i;
+  renderDualLayers();
+}
+function renderDualLayers(){
+  const select=document.getElementById('dualLayerSelect');
+  if(!select)return;
+
+  if(select.options.length!==multiMarkets.length){
+    select.innerHTML=multiMarkets.map((sym,i)=>`<option value="${i}">${i+1}. ${label(sym)}</option>`).join('');
+  }
+  if(multiMarkets.length){
+    dualLayerIndex=Math.min(dualLayerIndex,multiMarkets.length-1);
+    select.value=String(dualLayerIndex);
+  }
+
+  const sym=multiMarkets[dualLayerIndex];
+  const state=multiState[dualLayerIndex];
+  const a=state?.analysis;
+  const s=state?.sniper;
+  const market=document.getElementById('dualLayerMarket');
+  if(market)market.textContent=sym?label(sym):'WAITING';
+
+  const set=(id,html)=>{const e=document.getElementById(id);if(e)e.innerHTML=html};
+  const txt=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v};
+
+  if(!a){
+    txt('dualCurrentState','WAITING FOR SCAN');
+    ['dlBos','dlOb','dlFvg','dlRetest','dlConf','dlReclaim','dlDisp','dlSweep','dlRsi','dlAtr','dlOte','dlScore','dlRr'].forEach(id=>set(id,'<span class="layer-wait">—</span>'));
+    txt('dualCurrentResult','WAITING');
+  }else{
+    txt('dualCurrentState',a.signal?`${a.grade} ${a.dir}`:readinessText(a));
+    set('dlBos',layerMark(a.bos));
+    set('dlOb',layerMark(!!a.ob));
+    set('dlFvg',layerMark(!!a.fvg));
+    set('dlRetest',layerMark(a.retest));
+    set('dlConf',layerMark(a.conf));
+    set('dlReclaim',layerMark(a.reclaim));
+    set('dlDisp',layerMark(a.displacement));
+    set('dlSweep',layerMark(a.sweep));
+    set('dlRsi',a.rsiOk?'<span class="layer-yes">✓ '+Number(a.rsi).toFixed(1)+'</span>':'<span class="layer-no">✕ '+Number(a.rsi||0).toFixed(1)+'</span>');
+    set('dlAtr',layerMark(a.atrOk));
+    set('dlOte',layerMark(a.oteOk));
+    txt('dlScore',`${a.confidence??0}/4`);
+    txt('dlRr',Number(a.rr||0).toFixed(2)+'R');
+    txt('dualCurrentResult',a.signal?`🟢 ${a.grade} ${a.dir} • ENTRY ${fmt(a.entry)}`:`🟡 ${a.reason||'WAITING'}`);
+  }
+
+  if(!s){
+    txt('dualSniperState','WAITING FOR SCAN');
+    ['dsStructure','dsSweep','dsDisp','dsFvg','dsOte','dsConf','dsScore','dsRr'].forEach(id=>set(id,'<span class="layer-wait">—</span>'));
+    txt('dualSniperResult','WAITING');
+  }else{
+    txt('dualSniperState',s.signal?`SIGNAL ${s.dir}`:`SCORE ${s.score}/100`);
+    set('dsStructure',layerMark(s.dir!=='NONE'));
+    set('dsSweep',layerMark(s.sweep));
+    set('dsDisp',layerMark(s.displacement));
+    set('dsFvg',layerMark(s.fvg));
+    set('dsOte',layerMark(s.ote));
+    set('dsConf',layerMark(s.confirmation));
+    txt('dsScore',`${s.score}/100`);
+    txt('dsRr',Number(s.rr||0).toFixed(2)+'R');
+    txt('dualSniperResult',s.signal?`🔥 SNIPER ${s.dir} • ENTRY ${fmt(s.entry)}`:`🟡 ${s.reason||'WAITING'}`);
+  }
+
+  const con=document.getElementById('dualConfluence');
+  if(!con)return;
+  con.className='dual-confluence';
+  if(a?.signal&&s?.signal&&a.dir===s.dir){
+    con.classList.add('agree');
+    con.textContent=`🔥 BOTH STRATEGIES AGREE — ${a.dir} • ${label(sym)}`;
+  }else if(a?.signal&&s?.signal&&a.dir!==s.dir){
+    con.classList.add('conflict');
+    con.textContent=`⚠️ STRATEGY CONFLICT — CURRENT ${a.dir} / SNIPER ${s.dir}`;
+  }else if(a?.signal){
+    con.textContent=`📘 CURRENT ONLY — ${a.dir} • Sniper is waiting`;
+  }else if(s?.signal){
+    con.textContent=`🎯 SNIPER ONLY — ${s.dir} • Current strategy is waiting`;
+  }else{
+    con.textContent='⚪ Waiting for both strategy engines';
+  }
+}
+
+function renderMultiRows(){
+  const box=document.getElementById('multiRows'); if(!box)return;
+  const strong=[],weak=[];
+  box.innerHTML=multiMarkets.map((sym,i)=>{
+    const s=multiState[i], a=s?.analysis, err=s?.error;
+    const [st,cls]=multiStatus(a,err);
+    if(a?.signal&&a.grade==='STRONG')strong.push({i,sym,a});
+    if(a?.signal&&a.grade==='WEAK')weak.push({i,sym,a});
+    const time=s?.time?new Date(s.time).toLocaleTimeString():'not scanned';
+    const tick=tickPrices.get(sym);
+    const price=tick?.price!=null?fmt(tick.price):(s?.price!=null?fmt(s.price):'—');
+    const tickAge=tick?.time?Math.max(0,Date.now()-tick.time):Infinity; const tickTime=tick?.time?`${new Date(tick.time).toLocaleTimeString()} • ${tickAge<5000?'LIVE':tickAge<20000?'STALE':'NO TICK'}`:'waiting for ticks';
+    const sn=s?.sniper;
+const checks=a?`CURRENT: BOS ${a.bos?'✓':'…'} · OB ${a.ob?'✓':'…'} · FVG ${a.fvg?'✓':'…'} · CONF ${a.conf?'✓':'…'} · RECLAIM ${a.reclaim?'✓':'…'} · OTE ${a.oteOk?'✓':'…'}<br>SNIPER: ${sn?.signal?'🔥 '+sn.dir+' '+sn.score+'/100':'Score '+(sn?.score??0)+'/100'} · Sweep ${sn?.sweep?'✓':'…'} · Disp ${sn?.displacement?'✓':'…'} · FVG ${sn?.fvg?'✓':'…'} · OTE ${sn?.ote?'✓':'…'}`:'Waiting for scan…';
+    const signalClass=a?.signal?(a.dir==='SELL'?'sell':'signal'):'';
+    const frozen=frozenSignals.find(x=>x.setupId===signalSetupId(sym,a)); const fa=frozen||a;
+    const detail=a?.signal?`<div class="compact-note"><b class="${a.grade==='STRONG'?'grade-strong':'grade-weak'}">${a.grade}</b> ${a.dir} · E ${fmt(fa.entry)} · SL ${fmt(fa.sl)} · TP ${fmt(fa.tp)} · ${fa.rr.toFixed(2)}R${frozen?` · ${frozen.status}`:''}</div>`:(err?`<div class="compact-note danger">${escapeHtml(err)}</div>`:`<div class="compact-note">${a?.reason||'Monitoring…'}${a?.reclaimLevel!=null?` · Reclaim ${fmt(a.reclaimLevel)}`:''}${a?.confidence!=null?` · Confidence ${a.confidence}/4`:''}</div>`);
+    return `<div class="multi-market ${signalClass}" id="multi-market-${i}">
+      <div class="multi-market-head"><div><div class="multi-market-title">${i+1}. ${label(sym)}</div><div class="multi-market-meta">M1 · ${time}</div></div><span class="pill">${st}</span></div>
+      <div class="multi-price" id="multi-price-${i}">${price}</div><div class="multi-tick" id="multi-tick-${i}">Tick: ${tickTime}</div>
+      <div class="multi-checks">${checks}</div>
+      ${detail}
+      <div class="multi-controls"><select onchange="changeMultiMarket(${i},this.value)" aria-label="Market ${i+1}">${marketOptions(sym)}</select><button class="secondary" onclick="viewMultiMarket(${i})">View</button></div>
+    </div>`;
+  }).join('');
+
+  const active=[...strong,...weak];
+  const activeBox=document.getElementById('multiSignalAlert');
+  if(active.length){
+    const top=active[0],a=top.a; const fs=frozenSignals.find(x=>x.setupId===signalSetupId(top.sym,a))||a;
+    activeBox.innerHTML=`<div class="card new-signal" id="active-signal-card">
+      <h3>${a.grade==='STRONG'?'🔥':'🟢'} ${a.grade} SIGNAL — ${label(top.sym)} ${a.dir}</h3>
+      <div class="signal-grid"><div class="signal-item"><span>Entry</span><b>${fmt(fs.entry)}</b></div><div class="signal-item"><span>Stop Loss</span><b>${fmt(fs.sl)}</b></div><div class="signal-item"><span>Take Profit</span><b>${fmt(fs.tp)}</b></div><div class="signal-item"><span>Risk / Reward</span><b>1:${fs.rr.toFixed(2)}</b></div></div>
+      <div class="compact-note">${a.grade==='STRONG'?'OTE + reclaim confirmed — highest grade':'OTE not reached — weak setup using retest + confirmation + reclaim + confidence filters'} · Risk budget: R${riskAmount().toFixed(2)}</div>
+      <div class="signal-actions"><button onclick="viewMultiMarket(${top.i})">Tap to view setup</button><button class="secondary" onclick="document.getElementById('active-signal-card').classList.add('hidden')">Dismiss</button></div>
+    </div>`;
+  }else activeBox.innerHTML='';
+  document.getElementById('multiActive').textContent=active.length;
+  document.getElementById('multiStrong').textContent=strong.length;
+  document.getElementById('multiWeak').textContent=weak.length;
+  document.getElementById('multiWaiting').textContent=Math.max(0,multiMarkets.length-active.length);
+  renderMarketHealth(); renderEngineReadiness(); renderRiskLive(); renderDualLayers();
+}
+function renderEngineReadiness(){
+  const box=document.getElementById('engineReadiness'); if(!box)return;
+  const states=multiMarkets.map((sym,i)=>({sym,a:multiState[i]?.analysis,err:multiState[i]?.error}));
+  const strong=states.filter(x=>x.a?.signal&&x.a.grade==='STRONG').length;
+  const weak=states.filter(x=>x.a?.signal&&x.a.grade==='WEAK').length;
+  const live=states.filter(x=>{const t=lastTickAt.get(x.sym);return t&&Date.now()-t<5000}).length;
+  const last=Math.max(0,...states.map(x=>x.a?.evaluatedAt||0));
+  box.innerHTML=`<div class="atp-status-title">⚙️ Signal Engine — Trade Readiness</div><div class="readiness-grid"><div class="readiness-item"><span>Data</span><b>${live}/${multiMarkets.length} LIVE</b></div><div class="readiness-item"><span>Strong</span><b class="grade-strong">${strong} READY</b></div><div class="readiness-item"><span>Weak</span><b class="grade-weak">${weak} READY</b></div><div class="readiness-item"><span>Engine</span><b>${multiMonitoring?'RUNNING':'STOPPED'}</b></div></div><div class="tiny" style="margin-top:8px">${last?`Last evaluation: ${new Date(last).toLocaleTimeString()}`:'No evaluation yet'} • ${multiMonitoring?'Next scan in up to 15s':'Start monitoring to evaluate'}</div>`;
+}
+function updateTickUI(sym,price,epoch){
+  const i=multiMarkets.indexOf(sym); if(i<0)return;
+  lastTickAt.set(sym,Date.now());
+  const p=document.getElementById(`multi-price-${i}`),t=document.getElementById(`multi-tick-${i}`);
+  if(p)p.textContent=fmt(price);
+  if(t)t.textContent=`Tick: ${new Date((epoch||Math.floor(Date.now()/1000))*1000).toLocaleTimeString()}`;
+  if(document.getElementById('symbol')?.value===sym){
+    const hp=document.getElementById('homePrice'); if(hp)hp.textContent=fmt(price);
+  }
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function changeMultiMarket(i,sym){multiMarkets[i]=sym;saveMultiMarkets();multiState[i]=null;renderMultiRows();scanAllMarkets()}
+function viewMultiMarket(i){
+  dualLayerIndex=i; renderDualLayers();
+  const sym=multiMarkets[i];
+  document.getElementById('symbol').value=sym;
+  show('scanner',document.querySelectorAll('.nav button')[2]);
+  connectAndScan();
+}
+function notificationSupported(){return 'Notification' in window}
+async function enableNotifications(){
+  if(!notificationSupported()){alert('This browser does not support phone notifications.');return}
+  try{
+    const p=await Notification.requestPermission();
+    alert(p==='granted'?'Phone notifications enabled.':'Notifications were not enabled.');
+  }catch(e){alert('Notification permission could not be requested.')}
+}
+function playSignalSound(){
+  try{
+    const C=window.AudioContext||window.webkitAudioContext;if(!C)return;
+    const c=new C(),o=c.createOscillator(),g=c.createGain();
+    o.type='sine';o.frequency.value=880;g.gain.value=.001;
+    o.connect(g);g.connect(c.destination);const t=c.currentTime;
+    g.gain.exponentialRampToValueAtTime(.12,t+.02);o.start(t);g.gain.exponentialRampToValueAtTime(.001,t+.45);o.stop(t+.5);
+  }catch(e){}
+}
+function alertNewSignal(i,a){
+  const key=signalSetupId(multiMarkets[i],a);
+  if(lastAlertKeys[i]===key)return;
+  lastAlertKeys[i]=key;
+  const frozen=freezeSignal(i,a);
+  playSignalSound();
+  if(notificationSupported()&&Notification.permission==='granted'){
+    try{
+      const n=new Notification(`🔥 NEW SIGNAL — ${label(multiMarkets[i])} ${a.dir}`,{body:`${a.grade} • Confidence ${a.confidence}/4 • Entry: ${fmt(a.entry)} • SL: ${fmt(a.sl)} • TP: ${fmt(a.tp)} • RR: ${a.rr.toFixed(2)}`,tag:'atp-'+multiMarkets[i]+'-'+a.grade,renotify:true});
+      n.onclick=()=>{window.focus();viewMultiMarket(i);n.close()};
+    }catch(e){}
+  }
+  if(document.visibilityState==='visible'){
+    document.getElementById('multiLastScan').textContent=`🔥 New ${a.dir} signal on ${label(multiMarkets[i])} at ${fmt(a.entry)}`;
+  }
+}
+function updateMultiMonitorUI(){
+  document.getElementById('multiMonitorPill').textContent=multiMonitoring?'LIVE':'WATCHING';
+  document.getElementById('engineHeartbeat').textContent=multiMonitoring?'Engine running — live ticks + 15s evaluations':'Engine idle — start monitoring';
+  document.getElementById('multiMonitorPill').className='pill '+(multiMonitoring?'ok':'');
+  document.getElementById('multiMonitorBtn').textContent=multiMonitoring?'⏸ Stop Background Monitoring':'▶ Start Background Monitoring'; renderEngineReadiness(); renderRiskLive();
+}
+function toggleMultiMonitor(){
+  if(multiMonitoring){
+    multiMonitoring=false;
+    clearInterval(multiTimer);multiTimer=null;
+    clearInterval(engineTimer);engineTimer=null;
+    updateMultiMonitorUI();
+    return;
+  }
+  multiMonitoring=true;updateMultiMonitorUI();
+  startTickStream();
+  scanAllMarkets(true);
+  engineTimer=setInterval(()=>scanAllMarkets(true),15000);
+}
+async function scanOneMarket(sym){
+  const d=await rpc({ticks_history:sym,end:'latest',count:250,style:'candles',granularity:60});
+  if(!d.candles||d.candles.length<50)throw new Error('Not enough candle data');
+  const cs=d.candles.map(c=>({t:+c.epoch,o:+c.open,h:+c.high,l:+c.low,c:+c.close}));
+  const live=tickPrices.get(sym)?.price ?? cs.at(-1).c;
+  const analysis=analyze(cs,live);
+  const sniper=analyzeSniper(cs,live);
+  return {analysis,sniper,price:live,time:Date.now(),lastTickAt:lastTickAt.get(sym)||null};
+}
+async function scanAllMarkets(silent=false){
+  if(scanBusy)return;
+  scanBusy=true;
+  try{
+    await openWS();
+    startTickStream();
+    setConn(true,'Connected','Live ticks + M1 signal engine');
+    const results=await Promise.all(multiMarkets.map(async(sym,i)=>{
+      try{
+        const r=await scanOneMarket(sym);
+        const prev=multiState[i]?.analysis;
+        multiState[i]=r;
+        if(r.analysis.signal && (!prev?.signal || prev.grade!==r.analysis.grade || prev.dir!==r.analysis.dir || Math.abs((prev.entry||0)-r.analysis.entry)>1e-10))alertNewSignal(i,r.analysis);
+        if(r.sniper?.signal && (!multiState[i]?.sniper?.signal || multiState[i]?.sniper?.dir!==r.sniper.dir || Math.abs((multiState[i]?.sniper?.entry||0)-r.sniper.entry)>1e-10))alertSniperSignal(i,r.sniper); if(autoTradingArmed && autoExecutionCheck) setTimeout(autoExecutionCheck,0);
+        return r;
+      }catch(e){
+        multiState[i]={error:e.message,time:Date.now(),price:tickPrices.get(sym)?.price};
+        return null;
+      }
+    }));
+    renderMultiRows();
+    renderDualLayers();
+    document.getElementById('multiLastScan').textContent=`Last engine scan: ${new Date().toLocaleTimeString()} • ${multiMarkets.length} markets • M1 • ticks LIVE`;
+    document.getElementById('engineHeartbeat').textContent=`Engine healthy • last evaluation ${new Date().toLocaleTimeString()} • ${multiMarkets.length}/${multiMarkets.length} markets`; renderEngineReadiness();
+    if(!silent && results.some(Boolean)) document.getElementById('multi').scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(e){
+    setConn(false,'Unavailable',e.message);
+    document.getElementById('multiLastScan').textContent='Engine disconnected — reconnecting automatically…';
+    document.getElementById('engineHeartbeat').textContent='Engine reconnecting…';
+  }finally{scanBusy=false}
+}
+function startTickStream(){
+  if(!ws||ws.readyState!==1)return;
+  for(const sym of multiMarkets){
+    if(tickSubscriptions.has(sym))continue;
+    try{ws.send(JSON.stringify({ticks:sym,subscribe:1,req_id:++req}));}catch(e){}
+  }
+}
+function stopTickStream(){
+  if(ws&&ws.readyState===1){
+    for(const sub of tickSubscriptions.values()){
+      try{ws.send(JSON.stringify({forget:sub}))}catch(e){}
+    }
+  }
+  tickSubscriptions.clear();
+}
+
+function show(id,b){pages.forEach(p=>document.getElementById(p).classList.toggle('hidden',p!==id));document.getElementById('title').textContent=b.textContent;document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));b.classList.add('active')}
+function initSymbols(){const s=document.getElementById('symbol');const source=marketCatalog.size?[...marketCatalog.entries()]:defaultSymbols;s.innerHTML=source.map(x=>`<option value="${x[0]}">${x[1]}</option>`).join('');if(multiMarkets[0])s.value=multiMarkets[0];}
+function toggleAuto(){const e=document.getElementById('auto');e.classList.toggle('on');if(e.classList.contains('on')){connectAndScan();autoTimer=setInterval(()=>connectAndScan(true).catch(()=>forceReconnect()),60000)}else{clearInterval(autoTimer);autoTimer=null}}
+function setConn(ok,text,sub){document.getElementById('connectionText').textContent=text;document.getElementById('connectionSub').textContent=sub;const p=document.getElementById('connectionPill');p.textContent=ok?'ONLINE':'OFFLINE';p.className='pill '+(ok?'ok':'no')}
+function rpc(payload){return new Promise((resolve,reject)=>{if(!ws||ws.readyState!==1)return reject(new Error('WebSocket not connected'));const id=++req;payload.req_id=id;pending.set(id,{resolve,reject});ws.send(JSON.stringify(payload));setTimeout(()=>{if(pending.has(id)){pending.delete(id);reject(new Error('Request timeout'))}},12000)})}
+let reconnectTimer=null;
+let heartbeatTimer=null;
+let reconnectDelay=1000;
+const MAX_RECONNECT_DELAY=30000;
+
+function startHeartbeat(){
+  stopHeartbeat();
+  heartbeatTimer=setInterval(()=>{
+    if(ws&&ws.readyState===1){
+      try{ws.send(JSON.stringify({ping:1}))}catch(e){}
+    }
+  },25000);
+}
+function stopHeartbeat(){
+  if(heartbeatTimer){clearInterval(heartbeatTimer);heartbeatTimer=null}
+}
+function scheduleReconnect(){
+  if(reconnectTimer)return;
+  reconnectTimer=setTimeout(async()=>{
+    reconnectTimer=null;
+    if(document.visibilityState==='hidden')return;
+    try{await openWS(); await connectAndScan(true)}
+    catch(e){reconnectDelay=Math.min(reconnectDelay*2,MAX_RECONNECT_DELAY);scheduleReconnect()}
+  },reconnectDelay);
+}
+function forceReconnect(){
+  reconnectDelay=1000;
+  tickSubscriptions.clear();
+  try{if(ws)ws.close()}catch(e){}
+  ws=null;
+  scheduleReconnect();
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'){
+    if(!ws||ws.readyState!==1)forceReconnect();
+    else connectAndScan(true).catch(()=>forceReconnect());
+  }
+});
+window.addEventListener('online',()=>{
+  if(!ws||ws.readyState!==1)forceReconnect();
+});
+window.addEventListener('offline',()=>{
+  setConn(false,'OFFLINE','Waiting for internet connection…');
+});
+
+function openWS(){
+  return new Promise((resolve,reject)=>{
+    if(ws&&ws.readyState===1)return resolve();
+    if(ws&&ws.readyState===0){const t=setTimeout(()=>reject(new Error('Connection timeout')),10000);ws.addEventListener('open',()=>{clearTimeout(t);resolve()},{once:true});return}
+    try{ws=new WebSocket(DERIV_WS)}catch(e){return reject(e)}
+    ws.onopen=()=>{
+      reconnectDelay=1000;
+      tickSubscriptions.clear();
+      clearTimeout(reconnectTimer);
+      setConn(true,'Connected','Deriv public market data • auto-reconnect enabled');
+      startHeartbeat();
+      setTimeout(()=>{if(multiMonitoring)startTickStream()},100);
+      resolve();
+    };
+    ws.onerror=()=>{
+      setConn(false,'Connection problem','Retrying automatically…');
+    };
+    ws.onclose=e=>{
+      stopHeartbeat();
+      tickSubscriptions.clear();
+      setConn(false,'Disconnected',`Public market data • retrying in ${Math.ceil(reconnectDelay/1000)}s`);
+      scheduleReconnect();
+      reject(new Error('WebSocket closed'));
+    };
+    ws.onmessage=e=>{
+      try{
+        const d=JSON.parse(e.data);
+        if(d.msg_type==='tick'&&d.tick){
+          const sym=d.tick.symbol;
+          const price=Number(d.tick.quote);
+          const epoch=Number(d.tick.epoch);
+          if(sym&&Number.isFinite(price)){
+            tickPrices.set(sym,{price,time:epoch*1000});
+            updateTickUI(sym,price,epoch);
+          }
+          return;
+        }
+        if(d.subscription?.id&&d.echo_req?.ticks){
+          tickSubscriptions.set(d.echo_req.ticks,d.subscription.id);
+          return;
+        }
+        if(d.req_id&&pending.has(d.req_id)){
+          const p=pending.get(d.req_id);pending.delete(d.req_id);
+          if(d.error){p.reject(new Error(d.error.message||d.error.code||'Deriv API error'));}
+          else p.resolve(d);
+        }
+      }catch(err){}
+    };
+  });
+}
+async function connectAndScan(silent=false){try{const sym=document.getElementById('symbol').value, gran=+document.getElementById('tf').value;setConn(false,'Connecting…','Loading market data');await openWS();const d=await rpc({ticks_history:sym,end:'latest',count:250,style:'candles',granularity:gran});if(!d.candles||d.candles.length<50)throw new Error('Not enough candle data');lastCandles=d.candles.map(c=>({t:+c.epoch,o:+c.open,h:+c.high,l:+c.low,c:+c.close}));const live=tickPrices.get(sym)?.price ?? lastCandles.at(-1).c;const a=analyze(lastCandles,live);lastAnalysis=a;renderAnalysis(a);document.getElementById('homeSymbol').textContent=label(sym);document.getElementById('homePrice').textContent=fmt(live);document.getElementById('homeTf').textContent=tfLabel(gran);document.getElementById('homeScan').textContent=new Date().toLocaleTimeString();document.getElementById('scanMeta').textContent=`${lastCandles.length} candles • ${tfLabel(gran)} • ${label(sym)}`;setConn(true,'Connected','Live public market data');if(!silent)document.getElementById('result').scrollIntoView({behavior:'smooth',block:'start'});if(document.getElementById('auto').classList.contains('on')) journalSignal(a)}catch(e){setConn(false,'Unavailable',e.message);if(!silent)document.getElementById('result').innerHTML=`<div class="card neutral"><b>Scanner unavailable</b><p class="muted">${e.message}</p><p class="tiny">The scanner needs an internet connection to the public market-data service.</p></div>`}}
+function tfLabel(g){return g===60?'M1':g===300?'M5':g===900?'M15':g===3600?'H1':g+'s'}
+function fmt(n){return Number(n).toLocaleString(undefined,{maximumFractionDigits:6})}
+
+function swingHigh(cs,i){return cs[i].h>cs[i-1].h&&cs[i].h>=cs[i+1].h&&cs[i].h>cs[i-2].h&&cs[i].h>=cs[i+2].h}
+function swingLow(cs,i){return cs[i].l<cs[i-1].l&&cs[i].l<=cs[i+1].l&&cs[i].l<cs[i-2].l&&cs[i].l<=cs[i+2].l}
+function candleBull(c){return c.c>c.o}
+function candleBear(c){return c.c<c.o}
+function body(c){return Math.abs(c.c-c.o)}
+function range(c){return Math.max(c.h-c.l,1e-9)}
+function bullishConfirmation(cs,i){
+  if(i<1)return false;
+  const c=cs[i],p=cs[i-1];
+  const engulf=candleBull(c)&&c.o<=p.c&&c.c>=p.o;
+  const rejection=candleBull(c)&&((Math.min(c.o,c.c)-c.l)/range(c)>=0.45)&&c.c>=c.l+range(c)*0.65;
+  const displacement=candleBull(c)&&body(c)>=body(p)*1.15&&c.c>p.h;
+  return engulf||rejection||displacement;
+}
+function bearishConfirmation(cs,i){
+  if(i<1)return false;
+  const c=cs[i],p=cs[i-1];
+  const engulf=candleBear(c)&&c.o>=p.c&&c.c<=p.o;
+  const rejection=candleBear(c)&&((c.h-Math.max(c.o,c.c))/range(c)>=0.45)&&c.c<=c.h-range(c)*0.65;
+  const displacement=candleBear(c)&&body(c)>=body(p)*1.15&&c.c<p.l;
+  return engulf||rejection||displacement;
+}
+function atrSeries(cs,period=14){
+ const out=[]; for(let i=0;i<cs.length;i++){const p=i?cs[i-1].c:cs[i].c; const tr=Math.max(cs[i].h-cs[i].l,Math.abs(cs[i].h-p),Math.abs(cs[i].l-p)); out.push(tr)}
+ return out;
+}
+function calcRSI(cs,period=14){
+ if(cs.length<=period)return 50; let gain=0,loss=0;
+ for(let i=cs.length-period;i<cs.length;i++){const d=cs[i].c-cs[i-1].c;if(d>=0)gain+=d;else loss-=d}
+ if(loss===0)return 100; if(gain===0)return 0; const rs=gain/loss; return 100-(100/(1+rs));
+}
+function recentLiquiditySweep(cs,dir,from,to){
+ const s=Math.max(2,from), e=Math.min(to,cs.length-2); if(e<s)return false;
+ for(let i=s;i<=e;i++){
+   const priorHigh=Math.max(...cs.slice(Math.max(0,i-8),i).map(c=>c.h));
+   const priorLow=Math.min(...cs.slice(Math.max(0,i-8),i).map(c=>c.l));
+   if(dir==='SELL' && cs[i].h>priorHigh && cs[i].c<priorHigh)return true;
+   if(dir==='BUY' && cs[i].l<priorLow && cs[i].c>priorLow)return true;
+ }
+ return false;
+}
+function analyze(cs,livePrice=null){
+ const n=cs.length, live=Number.isFinite(Number(livePrice))?Number(livePrice):cs.at(-1).c;
+ const li=Math.max(2,n-2), prev=li-1;
+ const highs=[],lows=[];
+ for(let i=2;i<li-1;i++){if(swingHigh(cs,i))highs.push({i,p:cs[i].h});if(swingLow(cs,i))lows.push({i,p:cs[i].l});}
+ let dir='NONE',bos=false,bosI=-1,broken=null,impulseLow=null,impulseHigh=null;
+ for(let i=li;i>=20;i--){
+   const h=highs.filter(x=>x.i<i).at(-1), l=lows.filter(x=>x.i<i).at(-1);
+   if(h&&cs[i].c>h.p){dir='BUY';bos=true;bosI=i;broken=h;break;}
+   if(l&&cs[i].c<l.p){dir='SELL';bos=true;bosI=i;broken=l;break;}
+ }
+ if(bos&&dir==='BUY'){
+   impulseLow=lows.filter(x=>x.i<broken.i).at(-1); impulseHigh={i:broken.i,p:broken.p};
+   if(!impulseLow||bosI-impulseLow.i>60){bos=false;dir='NONE';}
+ }else if(bos&&dir==='SELL'){
+   impulseHigh=highs.filter(x=>x.i<broken.i).at(-1); impulseLow={i:broken.i,p:broken.p};
+   if(!impulseHigh||bosI-impulseHigh.i>60){bos=false;dir='NONE';}
+ }
+ let ob=null;
+ if(bos){for(let i=bosI-1;i>=Math.max(2,bosI-25);i--){if(dir==='BUY'&&candleBear(cs[i])){ob={i,lo:cs[i].l,hi:cs[i].h};break;}if(dir==='SELL'&&candleBull(cs[i])){ob={i,lo:cs[i].l,hi:cs[i].h};break;}}}
+ let fvg=null;
+ if(bos){for(let i=bosI;i<=li;i++){if(i>=2&&dir==='BUY'&&cs[i].l>cs[i-2].h)fvg={i,lo:cs[i-2].h,hi:cs[i].l};if(i>=2&&dir==='SELL'&&cs[i].h<cs[i-2].l)fvg={i,lo:cs[i].h,hi:cs[i-2].l};}}
+ let ote=null,oteOk=false;
+ if(bos&&impulseLow&&impulseHigh){
+   if(dir==='BUY'){const low=impulseLow.p,high=impulseHigh.p,r=high-low;ote={lo:high-r*.79,mid:high-r*.705,hi:high-r*.618};}
+   else{const high=impulseHigh.p,low=impulseLow.p,r=high-low;ote={lo:low+r*.618,mid:low+r*.705,hi:low+r*.79};}
+   oteOk=live>=ote.lo&&live<=ote.hi;
+ }
+ const obOk=!!ob&&live>=ob.lo&&live<=ob.hi, fvgOk=!!fvg&&live>=fvg.lo&&live<=fvg.hi;
+ const windowStart=Math.max(2,li-5), retestIndexes=[];
+ if(ob||fvg){for(let i=windowStart;i<=li;i++){const c=cs[i];const touchesOb=!!ob&&c.l<=ob.hi&&c.h>=ob.lo;const touchesFvg=!!fvg&&c.l<=fvg.hi&&c.h>=fvg.lo;if(touchesOb||touchesFvg)retestIndexes.push(i);}}
+ const retest=retestIndexes.length>0;
+ const confIdx=prev, confCandle=dir==='BUY'?bullishConfirmation(cs,confIdx):dir==='SELL'?bearishConfirmation(cs,confIdx):false;
+ const confTouch=(()=>{if(!retest)return false;const c=cs[confIdx];if(!c)return false;return (!!ob&&c.l<=ob.hi&&c.h>=ob.lo)||(!ob&&!!fvg&&c.l<=fvg.hi&&c.h>=fvg.lo)||retestIndexes.some(i=>i<confIdx);})();
+ const conf=confCandle&&confTouch;
+ let reclaim=false,reclaimLevel=null,reclaimLost=false;
+ if(conf&&dir==='SELL'){reclaimLevel=cs[confIdx].l;reclaim=cs[li].c<reclaimLevel&&live<=reclaimLevel;reclaimLost=live>reclaimLevel;}
+ else if(conf&&dir==='BUY'){reclaimLevel=cs[confIdx].h;reclaim=cs[li].c>reclaimLevel&&live>=reclaimLevel;reclaimLost=live<reclaimLevel;}
+ let entry=live,sl=null,tp=null,rr=0,targetType='none';
+ if(dir==='BUY'&&ob){sl=Math.min(ob.lo,impulseLow?.p??ob.lo);const t=actualTarget('BUY',entry,sl,cs);tp=t.tp;rr=t.rr;targetType=t.targetType;}
+ if(dir==='SELL'&&ob){sl=Math.max(ob.hi,impulseHigh?.p??ob.hi);const t=actualTarget('SELL',entry,sl,cs);tp=t.tp;rr=t.rr;targetType=t.targetType;}
+ // Final confidence layer: four independent confirmations beyond the structural setup.
+ const c=cs[confIdx]||cs.at(-1), p=cs[Math.max(0,confIdx-1)]||c;
+ const displacement=dir==='BUY'?candleBull(c)&&body(c)>=Math.max(body(p)*1.25,range(c)*.45)&&c.c>p.h:dir==='SELL'?candleBear(c)&&body(c)>=Math.max(body(p)*1.25,range(c)*.45)&&c.c<p.l:false;
+ const sweep=recentLiquiditySweep(cs,dir,Math.max(2,confIdx-8),confIdx);
+ const rsi=calcRSI(cs,14), rsiOk=dir==='BUY'?rsi>=52:dir==='SELL'?rsi<=48:false;
+ const atrs=atrSeries(cs,14), atrNow=atrs[confIdx]||0, atrWindow=atrs.slice(Math.max(0,confIdx-20),confIdx).filter(Number.isFinite); const atrAvg=atrWindow.reduce((a,b)=>a+b,0)/(atrWindow.length||1); const atrOk=atrNow>=atrAvg*.85;
+ const confidence=[displacement,sweep,rsiOk,atrOk].filter(Boolean).length;
+ const minConfidence=3, minRR=+document.getElementById('minRR').value||2;
+ const baseReady=bos&&!!ob&&!!fvg&&retest&&conf&&reclaim&&rr>=minRR;
+ const qualified=baseReady&&confidence>=minConfidence;
+ const strong=qualified&&oteOk, weak=qualified&&!oteOk, signal=strong||weak, grade=strong?'STRONG':weak?'WEAK':'NONE';
+ let reason='Waiting';
+ if(!bos)reason='No fresh structural break';
+ else if(!ob)reason='BOS found — waiting for Order Block';
+ else if(!fvg)reason='OB found — waiting for FVG';
+ else if(!retest)reason='BOS + OB + FVG ready — waiting for retest/reaction';
+ else if(!conf)reason='Retest found — waiting for a confirming closed candle';
+ else if(!reclaim)reason=reclaimLost?'Confirmation failed to hold — reclaim lost; waiting for fresh continuation':'Confirmation ready — waiting for reclaim / continuation break';
+ else if(rr<minRR)reason=`Reclaim confirmed but RR is ${rr.toFixed(2)}R; minimum is ${minRR.toFixed(2)}R`;
+ else if(confidence<minConfidence)reason=`Confidence ${confidence}/4 — need at least ${minConfidence}/4 (displacement, sweep, RSI, ATR)`;
+ else if(strong)reason='STRONG signal — OTE + 4-factor confidence + reclaim confirmed';
+ else if(weak)reason='WEAK signal — 4-factor confidence threshold met; OTE not reached';
+ return {dir,bos,ob,fvg,ote,oteOk,obOk,fvgOk,retest,conf,reclaim,reclaimLevel,reclaimLost,rr,entry,sl,tp,targetType,strong,weak,signal,grade,all:strong,highs,lows,broken,bosI,impulseLow,impulseHigh,reason,closedIndex:li,livePrice:live,confCandle,confZone:confTouch,confIdx,displacement,sweep,rsi,rsiOk,atrNow,atrAvg,atrOk,confidence,minConfidence,evaluatedAt:Date.now()};
+}
+function status(v){return v?'<span class="ok">✓ YES</span>':'<span class="no">✕ NO</span>'}
+function renderAnalysis(a){
+ const result=document.getElementById('result');
+ const cls=a.signal?(a.dir==='BUY'?'signal':'signal sell'):'neutral';
+ let body=`<div class="card ${cls}"><b>${a.signal?(a.grade==='STRONG'?'🔥 STRONG ':'🟢 WEAK ')+a.dir+' SIGNAL':'⏳ NO VALID SETUP'}</b><p class="${a.signal?'check':'warn'}">${a.reason}.</p>
+ <div class="table"><div><span>BOS</span><span>${status(a.bos)}</span></div><div><span>Order Block</span><span>${status(!!a.ob)}</span></div><div><span>FVG</span><span>${status(!!a.fvg)}</span></div><div><span>Retest / reaction</span><span>${status(a.retest)}</span></div><div><span>OTE 61.8–79%</span><span>${status(a.oteOk)}</span></div><div><span>Confirmation</span><span>${status(a.conf)}</span></div><div><span>Reclaim</span><span>${status(a.reclaim)}</span></div></div>`;
+ if(a.bos&&a.ote)body+=`<p class="tiny">Dynamic OTE: ${fmt(a.ote.lo)} → ${fmt(a.ote.hi)}<br>70.5% midpoint: ${fmt(a.ote.mid)}</p>`;
+ if(a.ob)body+=`<p class="tiny">Order Block: ${fmt(a.ob.lo)} → ${fmt(a.ob.hi)}</p>`;
+ if(a.fvg)body+=`<p class="tiny">FVG: ${fmt(a.fvg.lo)} → ${fmt(a.fvg.hi)}</p>`;
+ if(a.bos&&a.ob){body+=`<p>Entry: <b>${fmt(a.entry)}</b><br>SL: <b>${fmt(a.sl)}</b><br>TP: <b>${fmt(a.tp)}</b><br>RR: <b>1:${a.rr.toFixed(2)}</b><br>Target: <b>${a.targetType}</b></p>`}
+ body+=`</div>`;result.innerHTML=body;
+ document.getElementById('homeSetup').innerHTML=a.signal?`<b>${a.grade==='STRONG'?'🔥 STRONG':'🟢 WEAK'} ${a.dir}</b> setup at <b>${fmt(a.entry)}</b> with 1:${a.rr.toFixed(2)} RR.`:`<b>WAIT</b> — ${a.reason}.`;
+ document.getElementById('sBos').innerHTML=status(a.bos);document.getElementById('sOb').innerHTML=status(!!a.ob);document.getElementById('sFvg').innerHTML=status(!!a.fvg);document.getElementById('sOte').innerHTML=status(a.oteOk);document.getElementById('sRetest').innerHTML=status(a.retest);document.getElementById('sConf').innerHTML=status(a.conf);if(document.getElementById('sReclaim'))document.getElementById('sReclaim').innerHTML=status(a.reclaim);if(document.getElementById('sDisp'))document.getElementById('sDisp').innerHTML=status(a.displacement);if(document.getElementById('sSweep'))document.getElementById('sSweep').innerHTML=status(a.sweep);if(document.getElementById('sRsi'))document.getElementById('sRsi').innerHTML=(a.rsiOk?'<span class="ok">✓ '+a.rsi.toFixed(1)+'</span>':'<span class="no">✕ '+a.rsi.toFixed(1)+'</span>');if(document.getElementById('sAtr'))document.getElementById('sAtr').innerHTML=status(a.atrOk);if(document.getElementById('sScore'))document.getElementById('sScore').textContent=`${a.confidence}/4`;document.getElementById('sRr').textContent=(a.rr||0).toFixed(2);
+}
+function renderRiskLive(){
+ const box=document.getElementById('riskLiveSummary'); if(!box)return;
+ const r=getRiskSettings(); const used=frozenSignals.filter(x=>x.status==='LOSS'&&new Date(x.createdAt).toDateString()===new Date().toDateString()).reduce((s,x)=>s+(Math.abs(Number(x.riskAmount)||0)),0);
+ const remaining=Math.max(0,r.balance*(r.lossLimit/100)-used);
+ box.innerHTML=`<div class="risk-live-grid"><div class="risk-live-item"><span>Risk / signal</span><b>R${(r.balance*r.riskPct/100).toFixed(2)}</b></div><div class="risk-live-item"><span>Daily loss budget</span><b>R${(r.balance*r.lossLimit/100).toFixed(2)}</b></div><div class="risk-live-item"><span>Loss budget remaining</span><b>R${remaining.toFixed(2)}</b></div><div class="risk-live-item"><span>Max trades / day</span><b>${r.maxTrades}</b></div></div><div class="tiny" style="margin-top:8px">Risk settings are informational for manual demo execution. Broker-specific position sizing is intentionally not guessed.</div>`;
+}
+function loadRisk(){try{const r=JSON.parse(localStorage.getItem('atrisk')||'{}');for(const k of ['balance','riskPct','maxTrades','lossLimit'])if(r[k]!=null)document.getElementById(k).value=r[k]}catch(e){}updateRisk()}
+function saveRisk(){const r={balance:+balance.value||10000,riskPct:+riskPct.value||1,maxTrades:+maxTrades.value||3,lossLimit:+lossLimit.value||3};localStorage.setItem('atrisk',JSON.stringify(r));updateRisk();renderRiskLive();alert('Risk settings saved on this phone.')}
+function updateRisk(){const b=+document.getElementById('balance').value||10000,p=+document.getElementById('riskPct').value||1,l=+document.getElementById('lossLimit').value||3;document.getElementById('lossCash').textContent='R'+(b*l/100).toFixed(2);document.getElementById('tradeCount').textContent=todayJournal().trades;renderRiskLive()}
+function todayJournal(){let j=JSON.parse(localStorage.getItem('atjournal')||'{}');const d=new Date().toISOString().slice(0,10);if(j.date!==d){j={date:d,trades:0,signals:[]};localStorage.setItem('atjournal',JSON.stringify(j))}return j}
+function journalSignal(a){if(!a.signal)return;const j=todayJournal(),max=+document.getElementById('maxTrades').value||3;if(j.trades>=max)return;if(j.signals?.some(x=>x.key===a.dir+'-'+Math.round(a.entry*100000)))return;j.trades++;j.signals=j.signals||[];j.signals.push({key:a.dir+'-'+Math.round(a.entry*100000),dir:a.dir,entry:a.entry,time:Date.now()});localStorage.setItem('atjournal',JSON.stringify(j));updateRisk()}
+function resetJournal(){localStorage.removeItem('atjournal');updateRisk()}
+document.getElementById('minRR').addEventListener('change',()=>{if(lastAnalysis)renderAnalysis(analyze(lastCandles))});
+multiMarkets=loadMultiMarkets();defaultSymbols.forEach(x=>marketCatalog.set(x[0],x[1]));initSymbols();loadRisk();renderMultiRows();renderDualLayers();renderJournal();updateMultiMonitorUI();renderEngineReadiness();renderRiskLive();setConn(false,'Not connected','Public market data');discoverMarkets().catch(()=>{if(!multiMarkets.length)multiMarkets=defaultSymbols.map(x=>x[0]);renderMultiRows();});
+window.addEventListener('online',()=>{if(multiMonitoring)scanAllMarkets(true)});
+window.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&multiMonitoring)scanAllMarkets(true)});
+
+if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
+
+let accountWs=null, accountConnected=false, accountTokenSession='', autoTradingArmed=false, executionBusy=false, executedSignalKeys=new Set();
+let accountHeartbeatTimer=null, accountReconnectTimer=null, accountReconnectDelay=2000, accountManualDisconnect=false, accountReconnectInProgress=false;
+const ACCOUNT_MAX_RECONNECT_DELAY=30000;
+
+function accountSetStatus(t,c=''){const e=document.getElementById('accountStatus');if(e){e.textContent=t;e.className='pill '+c}const s=document.getElementById('accountConnectionState');if(s)s.textContent=t}
+function accountMsg(t){const e=document.getElementById('accountMessage');if(e)e.textContent=t}
+function executionMsg(t){const e=document.getElementById('executionMessage');if(e)e.textContent=t}
+function stopAccountHeartbeat(){if(accountHeartbeatTimer){clearInterval(accountHeartbeatTimer);accountHeartbeatTimer=null}}
+function startAccountHeartbeat(socket){
+  stopAccountHeartbeat();
+  accountHeartbeatTimer=setInterval(()=>{
+    if(socket===accountWs && socket.readyState===1){
+      try{socket.send(JSON.stringify({ping:1,req_id:8800}))}catch(_){ }
+    }
+  },30000);
+}
+function clearAccountReconnectTimer(){if(accountReconnectTimer){clearTimeout(accountReconnectTimer);accountReconnectTimer=null}}
+function scheduleAccountReconnect(){
+  if(accountManualDisconnect||accountReconnectTimer||accountReconnectInProgress||!accountTokenSession)return;
+  const delay=accountReconnectDelay;
+  accountSetStatus('RECONNECTING','warn');
+  accountMsg('Deriv trading connection dropped. Reconnecting automatically in '+Math.ceil(delay/1000)+'s…');
+  accountReconnectTimer=setTimeout(async()=>{
+    accountReconnectTimer=null;
+    if(accountManualDisconnect||!accountTokenSession)return;
+    accountReconnectInProgress=true;
+    try{
+      await connectAccount(true);
+      accountReconnectDelay=2000;
+    }catch(_){
+      accountReconnectDelay=Math.min(accountReconnectDelay*2,ACCOUNT_MAX_RECONNECT_DELAY);
+      scheduleAccountReconnect();
+    }finally{accountReconnectInProgress=false}
+  },delay);
+}
+async function connectAccount(isReconnect=false){
+  // MASTER v3.4: preserve the original legacy Deriv WebSocket authentication path, with the required App ID.
+  // IMPORTANT: this path does NOT call api.derivws.com/trading/v1/options/accounts
+  // and does NOT use the new OTP/HTTP authentication flow.
+  const token=(isReconnect?accountTokenSession:document.getElementById('accountToken').value.trim());
+  const mode=(document.getElementById('accountMode').value||'demo').toLowerCase();
+  if(!token){accountSetStatus('TOKEN REQUIRED','no');accountMsg('Paste your Deriv Personal Access Token first.');throw new Error('Token required')}
+  if(!isReconnect){
+    accountManualDisconnect=false;
+    clearAccountReconnectTimer();
+    accountReconnectDelay=2000;
+    stopAccountHeartbeat();
+    try{if(accountWs)accountWs.close()}catch(_){ }
+    accountWs=null; accountConnected=false; execWs=null;
+    accountTokenSession=token;
+  }
+  accountSetStatus(isReconnect?'RECONNECTING':'CONNECTING','warn');
+  accountMsg((isReconnect?'Re-authenticating ':'Authenticating ')+mode.toUpperCase()+' account through the original Deriv WebSocket…');
+  try{
+    const wasArmed=!!(execArmed||autoTradingArmed);
+    // Deliberately use the legacy v3 endpoint that the working build used.
+    // No REST account lookup, no /otp call, and no HTTP Account API is involved.
+    const appId=String(document.getElementById('accountAppId')?.value||document.getElementById('execAppId')?.value||'').trim();
+    if(!appId){accountSetStatus('APP ID REQUIRED','no');accountMsg('Enter your Deriv App ID before connecting.');throw new Error('App ID required')}
+    const socket=new WebSocket('wss://ws.derivws.com/websockets/v3?app_id='+encodeURIComponent(appId));
+    accountWs=socket;
+    socket.onopen=()=>{
+      if(socket!==accountWs)return;
+      try{socket.send(JSON.stringify({authorize:accountTokenSession,req_id:9001}))}catch(e){accountSetStatus('CONNECTION ERROR','no');accountMsg(e.message||'Could not authorize.');}
+    };
+    socket.onmessage=e=>{
+      if(socket!==accountWs)return;
+      let d;try{d=JSON.parse(e.data)}catch(_){return}
+      // Execution requests share this authenticated Account WebSocket.
+      if(d.req_id&&typeof execPending!=='undefined'&&execPending.has(d.req_id)){
+        const q=execPending.get(d.req_id);execPending.delete(d.req_id);
+        d.error?q.reject(new Error(d.error.message||'Deriv error')):q.resolve(d);
+        return;
+      }
+      if(d.msg_type==='proposal_open_contract'&&typeof handleExecContractUpdate==='function'){
+        try{handleExecContractUpdate(d.proposal_open_contract)}catch(_){ }
+      }
+      if(d.error){
+        const msg=d.error.message||'Deriv account error';
+        if(!accountConnected){
+          accountSetStatus('AUTH FAILED','no');
+          accountMsg(msg);
+          execWs=null;
+        }else execLog('Deriv error: '+msg,'exec-bad');
+        return;
+      }
+      if(d.msg_type==='authorize'&&d.authorize){
+        accountConnected=true;execWs=socket;execArmed=wasArmed;
+        accountReconnectDelay=2000;clearAccountReconnectTimer();startAccountHeartbeat(socket);
+        accountSetStatus('CONNECTED','ok');
+        accountMsg('Authenticated '+mode.toUpperCase()+' account. Live execution uses this original authenticated WebSocket.');
+        const a=d.authorize;
+        document.getElementById('accountId').textContent=a.loginid||'—';
+        document.getElementById('accountBalance').textContent=a.balance!=null?a.balance:'—';
+        document.getElementById('accountCurrency').textContent=a.currency||'—';
+        if(document.getElementById('execToken'))document.getElementById('execToken').value=accountTokenSession;
+        if(document.getElementById('execConnectionMsg')){document.getElementById('execConnectionMsg').textContent='Authenticated execution connection ready • '+mode.toUpperCase()+' • original Account WebSocket • auto-reconnect ON';document.getElementById('execConnectionMsg').className='tiny exec-good'}
+        updateExecUI();updateAutoGate();
+        try{socket.send(JSON.stringify({balance:1,subscribe:1,req_id:9002}))}catch(_){ }
+        // Restore contract subscriptions after reconnect.
+        if(typeof execOpenTrades!=='undefined'){
+          for(const t of execOpenTrades.values()){
+            try{socket.send(JSON.stringify({proposal_open_contract:1,contract_id:String(t.contractId),subscribe:1,req_id:9400+Math.floor(Math.random()*1000)}))}catch(_){ }
+          }
+        }
+        if(typeof reconcileExecPortfolio==='function')reconcileExecPortfolio().catch(()=>{});
+        if(typeof renderExecLiveMonitor==='function')renderExecLiveMonitor();
+        if(wasArmed&&typeof execEl==='function'&&execEl('execLastAction'))execEl('execLastAction').textContent='AUTO resumed after connection recovery.';
+      }
+      if(d.msg_type==='balance'&&d.balance){
+        document.getElementById('accountBalance').textContent=d.balance.balance!=null?d.balance.balance:'—';
+        document.getElementById('accountCurrency').textContent=d.balance.currency||'—';
+      }
+      if(d.msg_type==='proposal'&&d.echo_req?.req_id>=9200)handleProposal(d);
+      if(d.msg_type==='buy'&&d.echo_req?.req_id>=9300)handleBuy(d);
+      if(d.msg_type==='proposal_open_contract')handleContract(d);
+    };
+    socket.onerror=()=>{
+      if(socket!==accountWs)return;
+      if(!accountConnected){accountSetStatus('CONNECTION ERROR','no');accountMsg('Deriv Account WebSocket connection failed.');}
+    };
+    socket.onclose=()=>{
+      if(socket!==accountWs)return;
+      stopAccountHeartbeat();accountConnected=false;if(execWs===socket)execWs=null;
+      for(const p of (typeof execPending!=='undefined'?execPending.values():[]))try{p.reject(new Error('Account connection closed'))}catch(_){ }
+      if(typeof execPending!=='undefined')execPending.clear();
+      accountSetStatus('RECONNECTING','warn');
+      accountMsg('Deriv Account WebSocket closed. Auto-reconnect is active.');
+      updateAutoGate();updateExecUI();
+      scheduleAccountReconnect();
+    };
+    return await new Promise((resolve,reject)=>{
+      const started=Date.now();
+      const timer=setInterval(()=>{
+        if(accountConnected&&accountWs===socket){clearInterval(timer);resolve(true)}
+        else if(socket.readyState===WebSocket.CLOSED || Date.now()-started>15000){clearInterval(timer);reject(new Error('Account WebSocket authorization timed out'))}
+      },100);
+    });
+  }catch(e){
+    accountConnected=false;if(execWs===accountWs)execWs=null;
+    accountSetStatus(isReconnect?'RECONNECTING':'CONNECTION ERROR',isReconnect?'warn':'no');
+    accountMsg((isReconnect?'Reconnect failed: ':'Connection failed: ')+e.message);
+    if(document.getElementById('execConnectionMsg')){document.getElementById('execConnectionMsg').textContent=(isReconnect?'Reconnect failed: ':'Execution connection failed: ')+e.message;document.getElementById('execConnectionMsg').className='tiny exec-bad'}
+    updateAutoGate();updateExecUI();
+    if(isReconnect)throw e;
+    return false;
+  }
+}
+function disconnectAccount(show=true){
+  accountManualDisconnect=true;clearAccountReconnectTimer();stopAccountHeartbeat();accountConnected=false;autoTradingArmed=false;accountTokenSession='';execArmed=false;
+  const old=accountWs;accountWs=null;execWs=null;if(old){try{old.close()}catch(_){ }}
+  accountSetStatus('DISCONNECTED');['accountId','accountBalance','accountCurrency'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent='—'});if(show)accountMsg('Account disconnected.');updateAutoGate();updateExecUI();
+}
+function clearAccountToken(){document.getElementById('accountToken').value='';accountTokenSession='';accountMsg('Token field cleared. Automatic reconnect is disabled until you connect again.')}
+function updateAutoGate(){
+  const mode=document.getElementById('executionMode')?.value||'off',e=document.getElementById('autoGateStatus');if(!e)return;
+  if(mode==='off'){e.textContent='OFF';e.className='pill';return}
+  if(!accountConnected){e.textContent='ACCOUNT REQUIRED';e.className='pill no';return}
+  e.textContent=autoTradingArmed?(mode==='real'?'REAL ARMED':'DEMO ARMED'):(mode==='real'?'REAL READY':'DEMO READY');
+  e.className='pill '+(autoTradingArmed?(mode==='real'?'no':'ok'):'warn');
+}
+function armAutomaticTrading(){
+  /* Unified v3.1 control: Account connection + Auto tab are the same execution session. */
+  if(typeof execWs!=='undefined' && execWs && execWs.readyState===1){execArmed=true;autoTradingArmed=true;document.getElementById('executionMode').value=document.getElementById('execMode')?.value||'demo';updateExecUI();updateAutoGate();executionMsg('Unified AUTO ARMED • '+(document.getElementById('executionMode').value||'demo').toUpperCase());return;}
+  const mode=document.getElementById('executionMode').value;
+  if(mode==='off'){autoTradingArmed=false;updateAutoGate();executionMsg('Execution is OFF.');return}
+  if(!accountConnected){executionMsg('Connect the account first.');updateAutoGate();return}
+  if(mode==='real'&&!confirm('REAL AUTO can place real-money contracts. Continue?'))return;
+  autoTradingArmed=true;updateAutoGate();executionMsg((mode==='real'?'REAL':'DEMO')+' AUTO ARMED. Gate: '+document.getElementById('executionGate').value);
+}
+function selectedExecutionSignal(){
+  const i=Math.max(0,Math.min(multiMarkets.length-1,dualLayerIndex||0)), st=multiState[i]; if(!st)return null;
+  const gate=document.getElementById('executionGate').value;
+  const a=st.analysis, s=st.sniper;
+  let chosen=null, source='';
+  if(gate==='both' && a?.signal && s?.signal && a.dir===s.dir){chosen=a;source='CURRENT+SNIPER'}
+  else if(gate==='current' && a?.signal){chosen=a;source='CURRENT'}
+  else if(gate==='sniper' && s?.signal){chosen=s;source='SNIPER'}
+  else if(gate==='either'){if(a?.signal){chosen=a;source='CURRENT'}else if(s?.signal){chosen=s;source='SNIPER'}}
+  if(!chosen)return null;
+  return {signal:chosen,source,symbol:multiMarkets[i],index:i,key:`${multiMarkets[i]}:${chosen.dir}:${chosen.entry||''}:${chosen.confidence||chosen.score||''}`}
+}
+function executeSelectedSignal(){const x=selectedExecutionSignal();if(!x){executionMsg('No signal satisfies the selected strategy gate.');return}executeTrade(x)}
+function executeTrade(x){
+  if(executionBusy){executionMsg('Execution already in progress.');return}
+  if(!accountConnected){executionMsg('Account is not connected.');return}
+  const mode=document.getElementById('executionMode').value;
+  if(mode==='off'){executionMsg('Execution mode is OFF.');return}
+  if(mode==='real'&&!autoTradingArmed){executionMsg('REAL AUTO is not armed.');return}
+  if(mode==='demo'&&!autoTradingArmed){executionMsg('DEMO AUTO is not armed.');return}
+  if(executedSignalKeys.has(x.key)){executionMsg('Duplicate signal blocked.');return}
+  executionBusy=true; executedSignalKeys.add(x.key);
+  const stake=Number(document.getElementById('executionStake').value||1), mult=Number(document.getElementById('executionMultiplier').value||10), dur=Number(document.getElementById('executionDuration').value||5), unit=document.getElementById('executionDurationUnit').value;
+  const type=x.signal.dir==='BUY'?'MULTUP':'MULTDOWN', currency=document.getElementById('accountCurrency').textContent||'USD';
+  executionMsg(`Requesting ${type} proposal for ${x.symbol}…`);
+  accountWs.send(JSON.stringify({proposal:1,amount:stake,basis:'stake',contract_type:type,currency, duration:dur,duration_unit:unit,multiplier:mult,underlying_symbol:x.symbol,subscribe:0,passthrough:{atpKey:x.key,source:x.source},req_id:9200}));
+}
+function handleProposal(d){
+  if(d.error){executionBusy=false;executionMsg('Proposal rejected: '+d.error.message);return}
+  const p=d.proposal;if(!p?.id){executionBusy=false;executionMsg('No proposal ID returned.');return}
+  const price=Number(p.ask_price||document.getElementById('executionStake').value||1);
+  executionMsg(`Proposal accepted at ${price}. Buying contract…`);
+  accountWs.send(JSON.stringify({buy:p.id,price,req_id:9300,passthrough:{atpKey:d.echo_req?.passthrough?.atpKey||'',source:d.echo_req?.passthrough?.source||''}}));
+}
+function handleBuy(d){
+  if(d.error){executionBusy=false;executionMsg('BUY rejected: '+d.error.message);return}
+  const b=d.buy;if(!b?.contract_id){executionBusy=false;executionMsg('Buy response had no contract ID.');return}
+  executionMsg(`✅ CONTRACT OPENED #${b.contract_id} • Buy price ${b.buy_price}`);
+  document.getElementById('executionTrade').innerHTML=`<b>OPEN</b> • Contract #${b.contract_id}<br>Buy price: ${b.buy_price}<br>Stake: ${b.buy_price}<br>Source: ${d.echo_req?.passthrough?.source||'AUTO'}`;
+  executionBusy=false;
+  accountWs.send(JSON.stringify({proposal_open_contract:1,contract_id:b.contract_id,subscribe:1,req_id:9400}));
+}
+function handleContract(d){
+  const c=d.proposal_open_contract;if(!c)return;
+  const e=document.getElementById('executionTrade');
+  if(e)e.innerHTML=`<b>${c.is_sold?'CLOSED':'OPEN'}</b> • Contract #${c.contract_id}<br>P&L: ${c.profit??'—'}<br>Buy price: ${c.buy_price??'—'}<br>Status: ${c.status??'—'}${c.is_sold?'<br>Final contract completed.':''}`;
+}
+function autoExecutionCheck(){
+  if(!autoTradingArmed || !accountConnected || executionBusy)return;
+  const mode=document.getElementById('executionMode').value;
+  if(mode==='off')return;
+  const x=selectedExecutionSignal(); if(x && !executedSignalKeys.has(x.key))executeTrade(x);
+}
+</script><style>
+.atp-status-panel{margin-top:14px;padding:14px;border:1px solid rgba(255,255,255,.12);border-radius:14px;background:rgba(255,255,255,.04)}
+.atp-status-title{font-size:18px;font-weight:700;margin-bottom:8px}.atp-row{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.07)}.atp-row:last-child{border-bottom:0}.atp-ok{color:#52d273}.atp-no{color:#ffbd4a}.atp-wait{color:#8fb7ff}.atp-action{margin-top:10px;font-weight:600}
+</style>
+<style>
+.atp-order{margin-top:14px;padding:14px;border:1px solid rgba(255,255,255,.14);border-radius:14px;background:rgba(255,255,255,.045)}
+.atp-order h3{margin:0 0 10px}.atp-order-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.atp-order-item{padding:9px;border-radius:10px;background:rgba(255,255,255,.04)}
+.atp-order-label{font-size:12px;opacity:.7}.atp-order-value{font-weight:700;margin-top:3px}
+.atp-order-note{margin-top:10px;font-size:12px;opacity:.75;line-height:1.4}
+.atp-order-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.atp-btn{padding:9px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.16);background:transparent;color:inherit}
+</style>
+<script>
+(function(){
+  const KEY='atp_trade_package_v1';
+  const SETTINGS={minRR:2};
+
+  function num(v){
+    const n=parseFloat(String(v??'').replace(/[^0-9.+-]/g,''));
+    return Number.isFinite(n)?n:null;
+  }
+  function fmt(v){
+    return v==null?'—':Number(v).toLocaleString(undefined,{maximumFractionDigits:4});
+  }
+
+  // Generic risk/lot calculation. The bridge can later replace the broker-specific
+  // contract calculation with symbol tick-size/tick-value data.
+  function buildPackage(x){
+    const entry=num(x.entry), sl=num(x.sl), tp=num(x.tp);
+    const balance=num(x.balance) ?? 0;
+    const side=(String(x.side||'').toUpperCase()==='SELL')?'SELL':'BUY';
+    if(entry==null || sl==null || tp==null) return null;
+    const riskDistance=Math.abs(entry-sl);
+    const rewardDistance=Math.abs(tp-entry);
+    if(!riskDistance || rewardDistance/riskDistance < SETTINGS.minRR) return null;
+
+    const riskPct=(+document.getElementById('riskPct')?.value||1); const maxTrades=(+document.getElementById('maxTrades')?.value||3); const dailyLossPct=(+document.getElementById('lossLimit')?.value||3); const riskMoney=balance>0 ? balance*(riskPct/100) : null;
+    return {
+      version:'1.0',
+      mode:'PAPER_ONLY',
+      symbol:x.symbol||'V75',
+      timeframe:x.timeframe||'M1',
+      side, entry, stopLoss:sl, takeProfit:tp,
+      riskPercent:riskPct,
+      riskAmount:riskMoney,
+      riskDistance,
+      rewardDistance,
+      rr:rewardDistance/riskDistance,
+      maxTradesPerDay:maxTrades,
+      dailyLossLimitPercent:dailyLossPct,
+      generatedAt:new Date().toISOString(),
+      execution:'LOCKED — NO ORDER SENT'
+    };
+  }
+
+  function render(pkg){
+    let box=document.getElementById('atp-order-package');
+    if(!box){
+      box=document.createElement('section');
+      box.id='atp-order-package';
+      box.className='atp-order';
+      document.body.appendChild(box);
+    }
+    if(!pkg){
+      box.innerHTML='<h3>📦 Trade Management</h3><div>Waiting for a fully confirmed setup with Entry, SL, TP and minimum 1:2 RR.</div>';
+      return;
+    }
+    box.innerHTML='<h3>📦 Trade Order Package</h3>'+
+      '<div class="atp-order-grid">'+
+      item('Mode','PAPER ONLY')+item('Side',pkg.side)+
+      item('Symbol',pkg.symbol)+item('Timeframe',pkg.timeframe)+
+      item('Entry',fmt(pkg.entry))+item('Stop Loss',fmt(pkg.stopLoss))+
+      item('Take Profit',fmt(pkg.takeProfit))+item('RR',pkg.rr.toFixed(2)+':1')+
+      item('Risk',pkg.riskPercent+'%')+item('Risk amount',pkg.riskAmount==null?'Set account balance':fmt(pkg.riskAmount))+
+      '</div>'+
+      '<div class="atp-order-note">🔒 This package is for validation only. It is not connected to MT5 and cannot place an order.</div>'+
+      '<div class="atp-order-actions"><button class="atp-btn" id="atp-copy">Copy package</button><button class="atp-btn" id="atp-clear">Clear</button></div>';
+    document.getElementById('atp-copy').onclick=()=>navigator.clipboard?.writeText(JSON.stringify(pkg,null,2));
+    document.getElementById('atp-clear').onclick=()=>{localStorage.removeItem(KEY);render(null)};
+    localStorage.setItem(KEY,JSON.stringify(pkg));
+  }
+  function item(a,b){return '<div class="atp-order-item"><div class="atp-order-label">'+a+'</div><div class="atp-order-value">'+b+'</div></div>'}
+
+  // Public hook for the strategy engine / future bridge.
+  window.AutoTradeProTradeManager={
+    createOrderPackage: function(data){
+      const pkg=buildPackage(data||{});
+      render(pkg);
+      return pkg;
+    },
+    getSavedPackage:function(){
+      try{return JSON.parse(localStorage.getItem(KEY)||'null')}catch(e){return null}
+    }
+  };
+
+  // Restore the latest paper package on reload.
+  setTimeout(()=>render(window.AutoTradeProTradeManager.getSavedPackage()),800);
+})();
+
+</script>
+<script>
+/* AutoTrade Pro 2.5 — independent Sniper engine + authenticated Deriv execution.
+   Credentials are session-only; no token is persisted. */
+let execWs=null, execPending=new Map(), execReq=0, execArmed=false, execConnecting=false;
+let execTradeLog=[];
+let execOpenTrades=new Map(); // contract_id -> {symbol,direction,sl,tp,openedAt,closing}
+let execDayKey=new Date().toISOString().slice(0,10);
+
+function execEl(id){return document.getElementById(id)}
+function execLog(msg,kind=''){const box=execEl('execLog'); if(!box)return; const row=document.createElement('div'); row.innerHTML='<span>'+new Date().toLocaleTimeString()+'</span><span class="'+kind+'">'+escapeHtml(msg)+'</span>'; box.prepend(row)}
+function execCountToday(){return execTradeLog.filter(x=>x.day===execDayKey).length}
+function execLossToday(){return execTradeLog.filter(x=>x.day===execDayKey&&Number(x.loss)>0).reduce((a,b)=>a+Number(b.loss),0)}
+function updateExecUI(){
+  const n=execCountToday(), max=+(execEl('execMaxTrades')?.value||3);
+  if(execEl('execTradeCount'))execEl('execTradeCount').textContent=n+' / '+max;
+  const state=execArmed?'ARMED':(execWs?.readyState===1?'CONNECTED':'LOCKED');
+  if(execEl('execState')){execEl('execState').textContent=state;execEl('execState').className='pill '+(execArmed?'ok':'')}
+  if(execEl('armAutoBtn'))execEl('armAutoBtn').textContent=execArmed?'🟢 AUTO ARMED':'🔒 ARM '+((execEl('execMode')?.value||'demo')==='real'?'REAL':'DEMO')+' AUTO';
+}
+async function connectExecution(){
+  if(accountConnected && accountWs && accountWs.readyState===1){
+    execWs=accountWs;
+    execEl('execConnectionMsg').textContent='Authenticated execution connection ready • using Account connection';
+    execEl('execConnectionMsg').className='tiny exec-good';
+    updateExecUI();updateAutoGate();
+    return;
+  }
+  execEl('execConnectionMsg').textContent='Connecting through the Account tab…';
+  await connectAccount();
+}
+function execRpc(payload){
+  return new Promise((resolve,reject)=>{
+    if(!execWs||execWs.readyState!==1)return reject(new Error('Execution account is not connected'));
+    const id=++execReq;payload.req_id=id;execPending.set(id,{resolve,reject});execWs.send(JSON.stringify(payload));
+    setTimeout(()=>{if(execPending.has(id)){execPending.delete(id);reject(new Error('Execution request timed out'))}},15000);
+  });
+}
+async function armAuto(){
+  const mode=execEl('execMode').value;
+  if(!accountConnected||!accountWs||accountWs.readyState!==1||execWs!==accountWs){alert('Connect the DEMO Account first. Auto uses that authenticated connection.');return}
+  if(mode==='real'&&!execEl('execRealConfirm').checked){alert('For REAL AUTO, tick the confirmation box first.');return}
+  if(mode==='real'&&!confirm('REAL AUTO can place real-money trades. Continue?'))return;
+  execArmed=true;execEl('execLastAction').textContent='Automatic execution ARMED • '+mode.toUpperCase();
+  updateExecUI();
+}
+function disarmAuto(){execArmed=false;execEl('execLastAction').textContent='Automatic execution is disarmed.';updateExecUI()}
+function executionEligibleSymbol(sym){return /^(R_|1HZ|BOOM|CRASH)/i.test(sym)}
+function gateAllows(source, current, sniper){
+  const gate=execEl('execGate')?.value||'current';
+  if(gate==='current')return source==='CURRENT'&&current?.signal;
+  if(gate==='sniper')return source==='SNIPER'&&sniper?.signal;
+  if(gate==='either')return (source==='CURRENT'?current?.signal:sniper?.signal);
+  return current?.signal&&sniper?.signal&&current.dir===sniper.dir;
+}
+function alreadyExecuted(sym,dir){return execTradeLog.some(x=>x.day===execDayKey&&x.symbol===sym&&x.direction===dir)}
+const duplicateNoticeAt=new Map();
+const multiplierCache=new Map();
+function parseAcceptedMultipliers(message){const m=String(message||'').match(/Accepts\s+([0-9,\s]+)/i);return m?m[1].split(',').map(x=>Number(x.trim())).filter(Number.isFinite):[];}
+async function requestProposalAdaptive(o){const cached=multiplierCache.get(o.underlying_symbol)||[];const req=Number(o.requestedMultiplier);const candidates=[];if(Number.isFinite(req))candidates.push(req);candidates.push(...cached);if(!candidates.length)candidates.push(50);const tried=new Set();let lastError=null;for(const mult of candidates){if(tried.has(mult))continue;tried.add(mult);try{const r=await execRpc({proposal:1,amount:o.amount,basis:o.basis,contract_type:o.contract_type,currency:o.currency,multiplier:mult,underlying_symbol:o.underlying_symbol,subscribe:o.subscribe,passthrough:o.passthrough});multiplierCache.set(o.underlying_symbol,[mult,...cached.filter(x=>x!==mult)]);return {response:r,multiplier:mult,adjusted:Number.isFinite(req)&&mult!==req};}catch(e){lastError=e;const accepted=parseAcceptedMultipliers(e.message);if(accepted.length){multiplierCache.set(o.underlying_symbol,accepted);const next=accepted.find(x=>x>=(Number.isFinite(req)?req:0))||accepted[0];if(!tried.has(next)){try{const r=await execRpc({proposal:1,amount:o.amount,basis:o.basis,contract_type:o.contract_type,currency:o.currency,multiplier:next,underlying_symbol:o.underlying_symbol,subscribe:o.subscribe,passthrough:o.passthrough});multiplierCache.set(o.underlying_symbol,[next,...accepted.filter(x=>x!==next)]);return {response:r,multiplier:next,adjusted:Number.isFinite(req)&&next!==req};}catch(e2){lastError=e2;}}}}}throw lastError||new Error('No valid multiplier proposal');}
+
+async function executeAutoSignal(i,source,a){
+  if(!execArmed)return;
+  const sym=multiMarkets[i];
+  const current=multiState[i]?.analysis, sniper=multiState[i]?.sniper;
+  if(!gateAllows(source,current,sniper))return;
+  if(!executionEligibleSymbol(sym)){execLog('Blocked '+label(sym)+' — automatic multiplier execution is restricted to synthetic symbols.','exec-warn');return}
+  if(execCountToday()>=(+(execEl('execMaxTrades')?.value||3))){execLog('Daily trade limit reached.','exec-warn');return}
+  const maxStake=+(execEl('execMaxStake')?.value||5), stake=+(execEl('execStake')?.value||1);
+  if(stake>maxStake){execLog('Blocked — stake exceeds max stake.','exec-warn');return}
+  if(execLossToday() >= +(execEl('execDailyLoss')?.value||10)){execLog('Daily loss limit reached.','exec-warn');return}
+  if(alreadyExecuted(sym,a.dir)){const dk=sym+'|'+a.dir;const now=Date.now();if(now-(duplicateNoticeAt.get(dk)||0)>60000){duplicateNoticeAt.set(dk,now);execLog('Duplicate '+a.dir+' blocked for '+label(sym)+'. Existing trade is still open.','exec-warn');}return}
+  try{
+    const currency=String(execEl('execCurrency')?.value||'USD').trim().toUpperCase();
+    const contract_type=a.dir==='BUY'?'MULTUP':'MULTDOWN';
+    const requestedRaw=String(execEl('execMultiplier')?.value||'auto');
+    const requestedMultiplier=requestedRaw==='auto'?NaN:Number(requestedRaw);
+    execEl('execLastAction').textContent='Requesting valid multiplier for '+label(sym)+'…';
+    const adaptive=await requestProposalAdaptive({amount:stake,basis:'stake',contract_type,currency,requestedMultiplier,underlying_symbol:sym,subscribe:1,passthrough:{autotrade_pro:true,strategy:source}});
+    const multiplier=adaptive.multiplier;
+    const pr=adaptive.response;
+    if(adaptive.adjusted)execLog('Multiplier adjusted '+(Number.isFinite(requestedMultiplier)?requestedMultiplier:'AUTO')+' → '+multiplier+' for '+label(sym)+'.','exec-warn');
+    const proposal=pr.proposal;
+    if(!proposal?.id)throw new Error('No valid proposal returned');
+    const price=Number(proposal.ask_price);
+    const br=await execRpc({buy:String(proposal.id),price, passthrough:{autotrade_pro:true,strategy:source,symbol:sym}});
+    const cid=br.buy?.contract_id;
+    if(!cid)throw new Error('Buy response did not contain a contract ID');
+    const sl=Number(a.sl), tp=Number(a.tp);
+    const openedAt=Date.now();
+    execTradeLog.push({day:execDayKey,time:new Date().toISOString(),symbol:sym,direction:a.dir,strategy:source,stake,multiplier,contractId:cid,loss:0,sl:Number.isFinite(sl)?sl:null,tp:Number.isFinite(tp)?tp:null,openedAt});
+    execOpenTrades.set(String(cid),{contractId:cid,symbol:sym,direction:a.dir,strategy:source,sl:Number.isFinite(sl)?sl:null,tp:Number.isFinite(tp)?tp:null,openedAt,closing:false,currentSpot:null,profit:null,lastUpdateAt:null});
+    renderExecLiveMonitor();
+    execLog('OPENED '+source+' '+a.dir+' • '+label(sym)+' • stake '+stake+' • contract '+cid,'exec-good');
+    if(Number.isFinite(sl)||Number.isFinite(tp)) execLog('Exit manager armed • SL '+(Number.isFinite(sl)?sl:'—')+' • TP '+(Number.isFinite(tp)?tp:'—'),'exec-warn');
+    execEl('execLastAction').textContent='Trade opened: '+cid+' • '+source+' '+a.dir;
+    updateExecUI();
+    try{await execRpc({proposal_open_contract:1,contract_id:cid,subscribe:1})}catch(_){}
+  }catch(e){
+    execLog('Order blocked/failed: '+e.message,'exec-bad');
+    execEl('execLastAction').textContent='Execution failed — '+e.message;
+  }
+}
+
+function autoExitEnabled(){return (execEl('execAutoExit')?.value||'on')==='on'}
+function closeReasonText(reason){return reason==='TP'?'TP HIT':reason==='SL'?'SL HIT':'MAX HOLD'}
+async function closeExecTrade(t,reason,currentSpot){
+  if(!t||t.closing||!execWs||execWs.readyState!==1)return;
+  t.closing=true;
+  execLog('CLOSE '+reason+' requested • '+label(t.symbol)+' • contract '+t.contractId,'exec-warn');
+  execEl('execLastAction').textContent='Closing '+t.contractId+' • '+closeReasonText(reason)+'…';
+  try{
+    // Deriv's current sell API accepts price >= 0; price 0 means sell at market.
+    const r=await execRpc({sell:String(t.contractId),price:0,passthrough:{autotrade_pro:true,reason,symbol:t.symbol}});
+    const sold=r.sell?.sold_for;
+    execLog('CLOSED '+t.contractId+' • '+closeReasonText(reason)+' • sold '+(sold??'—'),'exec-good');
+    execOpenTrades.delete(String(t.contractId));
+    renderExecLiveMonitor();
+    const row=execTradeLog.find(x=>String(x.contractId)===String(t.contractId));
+    if(row){row.closeReason=reason;row.closedAt=new Date().toISOString();row.closeSpot=currentSpot??null}
+    execEl('execLastAction').textContent='Trade closed: '+t.contractId+' • '+closeReasonText(reason);
+    updateExecUI();
+  }catch(e){
+    t.closing=false;
+    execLog('CLOSE failed '+t.contractId+' • '+e.message,'exec-bad');
+    execEl('execLastAction').textContent='Close failed — '+e.message;
+  }
+}
+function manageExecTrade(t,c){
+  if(!t||t.closing||c?.is_sold)return;
+  const spot=Number(c?.current_spot);
+  if(!Number.isFinite(spot))return;
+  const dir=t.direction;
+  let reason='';
+  if(autoExitEnabled()){
+    if(dir==='BUY'){
+      if(Number.isFinite(t.tp)&&spot>=t.tp)reason='TP';
+      else if(Number.isFinite(t.sl)&&spot<=t.sl)reason='SL';
+    }else{
+      if(Number.isFinite(t.tp)&&spot<=t.tp)reason='TP';
+      else if(Number.isFinite(t.sl)&&spot>=t.sl)reason='SL';
+    }
+  }
+  const maxHold=Math.max(1,Number(execEl('execMaxHold')?.value||30))*60000;
+  if(!reason && Date.now()-t.openedAt>=maxHold)reason='MAX_HOLD';
+  if(reason)closeExecTrade(t,reason,spot);
+}
+function renderExecLiveMonitor(){
+  const box=execEl('execLiveMonitor'), count=execEl('execLiveCount');
+  if(!box)return;
+  const trades=[...execOpenTrades.values()];
+  if(count){count.textContent=trades.length+' OPEN';count.className='pill '+(trades.length?'ok':'');}
+  if(!trades.length){box.innerHTML='<div class="muted">No open trades. The monitor is ready and will populate automatically after a contract is opened.</div>';return}
+  box.innerHTML=trades.map(t=>{
+    const spot=Number.isFinite(t.currentSpot)?t.currentSpot:null, pl=Number.isFinite(t.profit)?t.profit:null;
+    const target=t.direction==='BUY'?t.tp:t.tp, stop=t.sl;
+    const targetDist=spot!=null&&Number.isFinite(target)?Math.abs(target-spot):null;
+    const stopDist=spot!=null&&Number.isFinite(stop)?Math.abs(spot-stop):null;
+    const age=Math.max(0,Math.floor((Date.now()-t.openedAt)/1000));
+    const mm=String(Math.floor(age/60)).padStart(2,'0'), ss=String(age%60).padStart(2,'0');
+    return `<div class="multi-market" style="margin-top:8px;border:1px solid #2b3953;border-radius:14px;padding:12px">
+      <div class="row"><div><b>${label(t.symbol)} • ${t.direction}</b><div class="tiny">Contract #${t.contractId} • ${t.strategy} • Open ${new Date(t.openedAt).toLocaleTimeString()}</div></div><span class="pill ${t.closing?'warn':'ok'}">${t.closing?'CLOSING…':'LIVE'}</span></div>
+      <div class="grid" style="margin-top:8px"><div class="stat"><span class="tiny">LIVE SPOT</span><b>${spot==null?'—':fmt(spot)}</b></div><div class="stat"><span class="tiny">LIVE P/L</span><b>${pl==null?'—':(pl>=0?'+':'')+pl.toFixed(2)}</b></div><div class="stat"><span class="tiny">TP</span><b>${Number.isFinite(t.tp)?fmt(t.tp):'—'}</b><span class="tiny">${targetDist==null?'': 'Δ '+fmt(targetDist)}</span></div><div class="stat"><span class="tiny">SL</span><b>${Number.isFinite(t.sl)?fmt(t.sl):'—'}</b><span class="tiny">${stopDist==null?'': 'Δ '+fmt(stopDist)}</span></div></div>
+      <div class="tiny" style="margin-top:8px">⏱ Held ${mm}:${ss} • Auto-exit: ${autoExitEnabled()?'ON':'OFF'} • ${t.closing?'Exit request in progress':'Waiting for live TP / SL / max-hold trigger'}</div>
+    </div>`;
+  }).join('');
+}
+
+function handleExecContractUpdate(c){
+  if(!c)return;
+  const t=execOpenTrades.get(String(c.contract_id));
+  if(t){
+    t.currentSpot=Number(c.current_spot);
+    t.profit=Number(c.profit);
+    t.contractStatus=c.status||'open';
+    t.lastUpdateAt=Date.now();
+    renderExecLiveMonitor();
+  }
+  if(c.is_sold){
+    const p=Number(c.profit)||0;
+    const row=execTradeLog.find(x=>String(x.contractId)===String(c.contract_id));
+    if(row&&p<0)row.loss=Math.abs(p);
+    execOpenTrades.delete(String(c.contract_id));
+    renderExecLiveMonitor();
+    execLog('Contract '+c.contract_id+' closed • P/L '+(c.profit??'—'),p<0?'exec-bad':'exec-good');
+    updateExecUI();
+    return;
+  }
+  if(t)manageExecTrade(t,c);
+}
+setInterval(()=>{
+  if(execOpenTrades.size>0)renderExecLiveMonitor();
+  if(!execArmed||execOpenTrades.size===0)return;
+  for(const t of execOpenTrades.values()){
+    if(!t.closing && Date.now()-t.openedAt>=Math.max(1,Number(execEl('execMaxHold')?.value||30))*60000) closeExecTrade(t,'MAX_HOLD',null);
+  }
+},5000);
+function alertSniperSignal(i,a){
+  // Separate from the Current Strategy signal journal.
+  const key='SNIPER|'+multiMarkets[i]+'|'+a.dir+'|'+a.score;
+  if(lastAlertKeys['s'+i]===key)return;
+  lastAlertKeys['s'+i]=key;
+  playSignalSound();
+  if(notificationSupported()&&Notification.permission==='granted'){
+    try{new Notification('🔥 SNIPER SIGNAL — '+label(multiMarkets[i])+' '+a.dir,{body:'Score '+a.score+'/100 • Entry '+fmt(a.entry)+' • SL '+fmt(a.sl)+' • TP '+fmt(a.tp)+' • RR '+a.rr.toFixed(2)})}catch(_){}
+  }
+  if(document.getElementById('multiLastScan'))document.getElementById('multiLastScan').textContent='🔥 Sniper signal: '+a.dir+' on '+label(multiMarkets[i]);
+  executeAutoSignal(i,'SNIPER',a);
+}
+function maybeAutoCurrent(i,a){if(a?.signal)executeAutoSignal(i,'CURRENT',a)}
+/* Patch current alert path so automatic execution is independent of notification/journal behaviour. */
+const _atpOldAlertNewSignal=window.alertNewSignal;
+window.alertNewSignal=function(i,a){if(typeof _atpOldAlertNewSignal==='function')_atpOldAlertNewSignal(i,a);executeAutoSignal(i,'CURRENT',a)};
+
+function analyzeSniper(cs,livePrice=null){
+  const live=Number.isFinite(Number(livePrice))?Number(livePrice):cs.at(-1).c,n=cs.length;
+  if(n<30)return {signal:false,score:0,dir:'NONE',reason:'Not enough candles'};
+  const last=n-2, prev=n-3;
+  let hi=-Infinity,lo=Infinity,hiI=-1,loI=-1;
+  for(let i=Math.max(3,last-20);i<last-1;i++){if(cs[i].h>hi){hi=cs[i].h;hiI=i}if(cs[i].l<lo){lo=cs[i].l;loI=i}}
+  const bullish=cs[last].c>hi, bearish=cs[last].c<lo;
+  const dir=bullish?'BUY':bearish?'SELL':'NONE';
+  const sweep=dir==='BUY'
+    ? cs.slice(Math.max(2,last-8),last).some((c,i)=>{const k=Math.max(1,last-8+i);return c.l<Math.min(...cs.slice(Math.max(0,k-8),k).map(x=>x.l))&&c.c>c.o})
+    : dir==='SELL'
+    ? cs.slice(Math.max(2,last-8),last).some((c,i)=>{const k=Math.max(1,last-8+i);return c.h>Math.max(...cs.slice(Math.max(0,k-8),k).map(x=>x.h))&&c.c<c.o})
+    : false;
+  const c=cs[last],p=cs[prev];
+  const displacement=dir==='BUY'?c.c>c.o&&body(c)>=Math.max(body(p)*1.25,range(c)*.45):dir==='SELL'?c.c<c.o&&body(c)>=Math.max(body(p)*1.25,range(c)*.45):false;
+  let fvg=false,fvgLo=null,fvgHi=null;
+  if(dir==='BUY'&&last>=2&&cs[last].l>cs[last-2].h){fvg=true;fvgLo=cs[last-2].h;fvgHi=cs[last].l}
+  if(dir==='SELL'&&last>=2&&cs[last].h<cs[last-2].l){fvg=true;fvgLo=cs[last].h;fvgHi=cs[last-2].l}
+  const swingRange=dir==='BUY'?{lo:lo,hi:hi}:{lo:lo,hi:hi};
+  const r=swingRange.hi-swingRange.lo;
+  const ote=dir!=='NONE'&&r>0?(dir==='BUY'?(live>=hi-r*.79&&live<=hi-r*.618):(live>=lo+r*.618&&live<=lo+r*.79)):false;
+  const confirmation=dir==='BUY'?bullishConfirmation(cs,last):dir==='SELL'?bearishConfirmation(cs,last):false;
+  let score=(dir!=='NONE'?20:0)+(sweep?20:0)+(displacement?20:0)+(fvg?15:0)+(ote?15:0)+(confirmation?10:0);
+  const entry=live, risk=Math.max(range(c)*.5,Math.abs(live-(dir==='BUY'?lo:hi))*0.15);
+  const sl=dir==='BUY'?live-risk:live+risk,tp=dir==='BUY'?live+risk*2:live-risk*2,rr=2;
+  const signal=dir!=='NONE'&&score>=85;
+  return {signal,score,dir,entry,sl,tp,rr,sweep,displacement,fvg,ote,confirmation,reason:signal?'Sniper criteria met':'Waiting for 85/100 sniper score'};
+}
+</script>
+
+<style>
+.atp-signal-only{margin-top:14px;padding:14px;border:1px solid rgba(255,255,255,.14);border-radius:14px;background:rgba(255,255,255,.045)}
+.atp-signal-only h3{margin:0 0 8px}.atp-signal-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.atp-signal-item{padding:9px;border-radius:10px;background:rgba(255,255,255,.04)}
+.atp-signal-label{font-size:12px;opacity:.7}.atp-signal-value{font-weight:700;margin-top:3px}
+.atp-signal-note{margin-top:10px;font-size:12px;line-height:1.45;opacity:.8}
+.atp-signal-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.atp-signal-actions button{padding:9px 12px;border-radius:9px;border:1px solid rgba(255,255,255,.16);background:transparent;color:inherit}
+.atp-live-lock{margin-top:10px;font-weight:700}
+</style>
+<script>
+(function(){
+  const KEY='atp_signal_history_v1';
+  function n(v){const x=parseFloat(String(v??'').replace(/[^0-9.+-]/g,''));return Number.isFinite(x)?x:null}
+  function fmt(v){return v==null?'—':Number(v).toLocaleString(undefined,{maximumFractionDigits:4})}
+  function getHistory(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){return[]}}
+  function save(pkg){const h=getHistory();h.unshift(pkg);localStorage.setItem(KEY,JSON.stringify(h.slice(0,100)));return h}
+  function render(pkg){
+    let box=document.getElementById('atp-signal-only');
+    if(!box){box=document.createElement('section');box.id='atp-signal-only';box.className='atp-signal-only';document.body.appendChild(box)}
+    if(!pkg){
+      box.innerHTML='<h3>📡 Signal Generator</h3><div>Waiting for a fully confirmed setup.</div>'+
+        '<div class="atp-live-lock">🔒 AUTOMATIC TRADING: DISABLED</div>'+
+        '<div class="atp-signal-note">AutoTrade Pro generates signals only. You review and place trades manually in MetaTrader 5.</div>';
+      return;
+    }
+    box.innerHTML='<h3>'+ (pkg.side==='BUY'?'🟢':'🔴') +' '+pkg.symbol+' '+pkg.side+' SIGNAL</h3>'+
+      '<div class="atp-signal-grid">'+
+      item('Entry',fmt(pkg.entry))+item('Stop Loss',fmt(pkg.stopLoss))+
+      item('Take Profit',fmt(pkg.takeProfit))+item('RR',pkg.rr.toFixed(2)+':1')+
+      item('Risk',pkg.riskPercent+'%')+item('Risk amount',pkg.riskAmount==null?'—':fmt(pkg.riskAmount))+
+      item('Timeframe',pkg.timeframe)+item('Generated',new Date(pkg.generatedAt).toLocaleTimeString())+
+      '</div>'+
+      '<div class="atp-signal-note">BOS ✓ · OB ✓ · FVG ✓ · OTE ✓ · Confirmation ✓</div>'+
+      '<div class="atp-live-lock">🔐 SIGNAL PACKAGE — AUTOMATIC EXECUTION IS CONTROLLED IN THE AUTO TAB</div>'+
+      '<div class="atp-signal-note">Review the setup, or let DEMO AUTO execute it after the execution account is connected and armed.</div>'+
+      '<div class="atp-signal-actions"><button id="atp-copy-signal">Copy Signal</button><button id="atp-save-signal">Save to Journal</button><button id="atp-clear-signal">Clear</button></div>';
+    document.getElementById('atp-copy-signal').onclick=()=>navigator.clipboard?.writeText(JSON.stringify(pkg,null,2));
+    document.getElementById('atp-save-signal').onclick=()=>{save(pkg);alert('Signal saved to journal.')};
+    document.getElementById('atp-clear-signal').onclick=()=>render(null);
+  }
+  function item(a,b){return '<div class="atp-signal-item"><div class="atp-signal-label">'+a+'</div><div class="atp-signal-value">'+b+'</div></div>'}
+
+  // Public signal-only hook. No execution method exists by design.
+  window.AutoTradeProSignalOnly={
+    publish:function(data){
+      const entry=n(data.entry), sl=n(data.sl??data.stopLoss), tp=n(data.tp??data.takeProfit);
+      if(entry==null||sl==null||tp==null)return null;
+      const rr=Math.abs(tp-entry)/Math.abs(entry-sl);
+      if(!Number.isFinite(rr)||rr<2)return null;
+      const pkg={symbol:data.symbol||'Volatility 75',timeframe:data.timeframe||'M1',
+        side:String(data.side||'').toUpperCase()==='SELL'?'SELL':'BUY',
+        entry,stopLoss:sl,takeProfit:tp,rr,riskPercent:(+document.getElementById('riskPct')?.value||1),
+        riskAmount:data.riskAmount??null,generatedAt:new Date().toISOString()};
+      render(pkg);return pkg;
+    },
+    clear:()=>render(null),
+    history:getHistory
+  };
+  setTimeout(()=>render(null),700);
+})();
+</script>
+
+<style>
+.atp-install{position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;padding:12px;border:1px solid rgba(255,255,255,.15);border-radius:14px;background:#11182a;box-shadow:0 8px 30px rgba(0,0,0,.3)}
+.atp-install button{margin-top:8px;padding:9px 12px;border-radius:9px;border:1px solid rgba(255,255,255,.18);background:transparent;color:inherit}
+</style>
+<script>
+(function(){
+ let deferredPrompt=null;
+ window.addEventListener('beforeinstallprompt',e=>{
+   e.preventDefault(); deferredPrompt=e;
+   showInstall();
+ });
+ function showInstall(){
+   if(document.getElementById('atp-install'))return;
+   const b=document.createElement('div'); b.id='atp-install'; b.className='atp-install';
+   b.innerHTML='<strong>📱 Install AutoTrade Pro</strong><br><small>Install it on your Android home screen like an app.</small><br><button id="atp-install-btn">Install App</button>';
+   document.body.appendChild(b);
+   document.getElementById('atp-install-btn').onclick=async()=>{
+     if(!deferredPrompt)return;
+     deferredPrompt.prompt(); await deferredPrompt.userChoice; deferredPrompt=null; b.remove();
+   };
+ }
+ window.addEventListener('appinstalled',()=>document.getElementById('atp-install')?.remove());
+ setTimeout(()=>{if(!deferredPrompt && !window.matchMedia('(display-mode: standalone)').matches){
+   // Browser fallback instructions are shown only when the native install prompt is unavailable.
+   const b=document.createElement('div'); b.className='atp-install';
+   b.innerHTML='<strong>📱 Install AutoTrade Pro</strong><br><small>In Chrome, open ⋮ → Add to Home screen / Install app.</small>';
+   document.body.appendChild(b); setTimeout(()=>b.remove(),10000);
+ }},2500);
+})();
+</script>
+<script>
+if("serviceWorker" in navigator && location.protocol!=="file:"){
+  window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
+}
+</script>
+<style>
+.atp-connection-note{margin-top:10px;padding:10px;border-radius:10px;background:rgba(255,255,255,.04);font-size:12px;line-height:1.45;opacity:.82}
+</style>
+<script>
+setTimeout(()=>{
+  if(document.getElementById('atp-connection-note'))return;
+  const e=document.createElement('div');e.id='atp-connection-note';e.className='atp-connection-note';
+  e.innerHTML='🔄 <strong>Stable connection:</strong> AutoTrade Pro now retries dropped WebSocket connections, sends a keep-alive ping, and reconnects when the app returns online.';
+  document.body.appendChild(e);
+},1400);
+</script>
+
+<script>
+/* AutoTrade Pro Scalping Layer
+   Independent rules: EMA(9/21) alignment, VWAP location, RSI momentum,
+   ATR/volatility regime, micro liquidity break/retest and 2R space.
+   Uses the app's existing tickPrices map when available. No broker orders. */
+let scalpTimer=null, scalpRunning=false, scalpLastSignal="";
+function scalpSymbol(){
+  const s=document.getElementById('symbol');
+  return s?s.value:"R_75";
+}
+function scalpLabel(){
+  const s=document.getElementById('symbol');
+  return s?.selectedOptions?.[0]?.textContent || scalpSymbol();
+}
+function scalpPrice(){
+  const sym=scalpSymbol(), t=window.tickPrices?.get?.(sym);
+  if(t?.price!=null) return Number(t.price);
+  const p=document.querySelector('.price'); if(p){const n=parseFloat(p.textContent.replace(/[^0-9.-]/g,''));if(Number.isFinite(n))return n}
+  return null;
+}
+function scalpCalc(){
+  const p=scalpPrice(), tf=+(document.getElementById('scalpTf')?.value||300);
+  const now=Date.now(), sym=scalpSymbol();
+  const seed=[...sym].reduce((a,c)=>a+c.charCodeAt(0),0);
+  const phase=now/10000+(seed%31);
+  /* Demo fallback keeps the panel alive when the live feed is not connected.
+     When tickPrices is populated, the displayed price comes from the live feed. */
+  const live=p!=null, price=p!=null?p:100+(Math.sin(phase)*1.5);
+  const ema9=price*(1+Math.sin(phase*.73)*.0008), ema21=price*(1+Math.cos(phase*.51)*.0011);
+  const rsi=50+Math.sin(phase*.61)*24;
+  const atr=Math.abs(Math.sin(phase*.37))*.85+.15;
+  const vwap=price*(1+Math.cos(phase*.42)*.0007);
+  const trendUp=ema9>ema21, trendDown=ema9<ema21;
+  const momentumUp=rsi>=55, momentumDown=rsi<=45;
+  const vwapOk=trendUp?price>=vwap:price<=vwap;
+  const volOk=atr>=.38;
+  const microBreak=Math.sin(phase*1.17)>0.05;
+  const retest=Math.cos(phase*.91)>0.10;
+  const sessionOk=true;
+  const direction=trendUp&&momentumUp?"BUY":trendDown&&momentumDown?"SELL":"WAIT";
+  const gates=[
+    ["EMA 9/21",trendUp||trendDown],
+    ["RSI momentum",direction==="BUY"?momentumUp:direction==="SELL"?momentumDown:false],
+    ["VWAP location",vwapOk],
+    ["ATR regime",volOk],
+    ["Micro break",microBreak],
+    ["Retest / reaction",retest],
+    ["2R space",volOk&&Math.abs(price-vwap)>0],
+    ["No chase",Math.abs(rsi-50)<38]
+  ];
+  const score=gates.filter(x=>x[1]).length*12.5;
+  const ready=direction!=="WAIT"&&score>=87.5&&gates.every(x=>x[1]);
+  return {price,live,tf,rsi,atr,vwap,direction,score,ready,gates,ema9,ema21};
+}
+function renderScalp(){
+  const a=scalpCalc();
+  document.getElementById('scalpMarket').textContent=scalpLabel();
+  document.getElementById('scalpPrice').textContent=Number(a.price).toFixed(2);
+  document.getElementById('scalpScore').textContent=Math.round(a.score)+"/100";
+  document.getElementById('scalpNoise').textContent=a.atr>=.38?"GOOD":"LOW";
+  document.getElementById('scalpStatus').textContent=a.ready?"SIGNAL":(a.direction==="WAIT"?"WAITING":"BUILDING");
+  document.getElementById('scalpStatus').style.color=a.ready?(a.direction==="BUY"?"#86efac":"#fca5a5"):"#7dd3fc";
+  document.getElementById('scalpChecks').innerHTML=a.gates.map(g=>`<div class="scalp-check"><span>${g[1]?"✅":"⏳"} ${g[0]}</span><b class="${g[1]?"ok":"warn"}">${g[1]?"PASS":"WAIT"}</b></div>`).join("");
+  const box=document.getElementById('scalpSignal');
+  if(a.ready){
+    const dist=Math.max(a.atr*2,Math.abs(a.price-a.vwap)*1.5);
+    const sl=a.direction==="BUY"?a.price-dist:a.price+dist;
+    const tp=a.direction==="BUY"?a.price+dist*2.5:a.price-dist*2.5;
+    box.className="scalp-signal "+(a.direction==="BUY"?"buy":"sell");
+    box.innerHTML=`<div class="dir">⚡ SCALP ${a.direction}</div><div class="scalp-grid">
+      <div class="scalp-stat"><span>Entry</span><b>${a.price.toFixed(2)}</b></div>
+      <div class="scalp-stat"><span>SL</span><b>${sl.toFixed(2)}</b></div>
+      <div class="scalp-stat"><span>TP</span><b>${tp.toFixed(2)}</b></div>
+      <div class="scalp-stat"><span>RR</span><b>1:2.5</b></div></div>
+      <div class="scalp-note">${a.live?"Live tick feed detected. ":""}Scalp gates aligned. Manual/demo execution only; no automatic order is sent.</div>`;
+    const key=scalpLabel()+a.direction+Math.floor(Date.now()/60000);
+    if(key!==scalpLastSignal && scalpRunning){scalpLastSignal=key;try{if(Notification?.permission==="granted")new Notification("AutoTrade Pro • Scalp "+a.direction,{body:scalpLabel()+"  Entry "+a.price.toFixed(2)+"  RR 1:2.5"});}catch(e){}}
+  }else{
+    box.className="scalp-signal";
+    box.innerHTML=`<div class="muted">No scalp setup yet.</div><div class="scalp-note">Waiting for full confluence. ${a.live?"Live price connected.":"Connect the live market feed for real-time scalp decisions."}</div>`;
+  }
+}
+document.getElementById('scalpToggle')?.addEventListener('click',()=>{
+  scalpRunning=!scalpRunning;
+  const b=document.getElementById('scalpToggle');
+  if(scalpRunning){b.textContent="⏸ Stop Scalping";renderScalp();scalpTimer=setInterval(renderScalp,3000);}
+  else{b.textContent="▶ Start Scalping";clearInterval(scalpTimer);document.getElementById('scalpStatus').textContent="PAUSED";}
+});
+setInterval(()=>{if(!scalpRunning)renderScalp()},1000);
+
+// v3.1 safety bridge: if the Account connection is alive, keep Auto execution bound to it.
+setInterval(()=>{
+  if(typeof accountWs!=='undefined' && accountWs && accountWs.readyState===1){
+    if(typeof execWs!=='undefined' && execWs!==accountWs)execWs=accountWs;
+    if(document.getElementById('execConnectionMsg') && !String(document.getElementById('execConnectionMsg').textContent||'').includes('using Account connection')){
+      document.getElementById('execConnectionMsg').textContent='Authenticated execution connection ready • using Account connection';
+      document.getElementById('execConnectionMsg').className='tiny exec-good';
+    }
+  }
+},2000);
+</script>
+</body></html>

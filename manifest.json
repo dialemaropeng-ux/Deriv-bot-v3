@@ -1,0 +1,23 @@
+{
+  "name": "Boom and Crash Signal Provider",
+  "short_name": "Boom & Crash Signals",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0b1020",
+  "theme_color": "#0b1020",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "id": "./",
+  "scope": "./",
+  "description": "Deriv Boom and Crash signal provider with one-minute entry signals."
+}
